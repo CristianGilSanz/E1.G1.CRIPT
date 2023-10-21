@@ -100,7 +100,7 @@ class HospitalManagementSystem:
 
         self.label_gender = Label(self.Manage_Frame, text="Sexo", font=("Arial",15,"bold"))
         self.label_gender.grid(row=5, column=0, pady=10, padx=10, sticky="w")
-        self.entry_gender = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"))
+        self.entry_gender = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"), state="readonly")
         self.entry_gender["values"]=("Masculino", "Femenino", "Otro")
         self.entry_gender.grid(row=5, column=1, pady=10, sticky="w")
 
@@ -126,7 +126,7 @@ class HospitalManagementSystem:
     
         self.label_blood_type = Label(self.Manage_Frame, text="Grupo sanguíneo", font=("Arial",15,"bold"))
         self.label_blood_type.grid(row=1, column=3, pady=10, padx=15, sticky="w")
-        self.entry_blood_type = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"))
+        self.entry_blood_type = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"), state="readonly")
         self.entry_blood_type["values"]=("A+","A-","B+","B-","AB+","AB-","O+","O-")
         self.entry_blood_type.grid(row=1, column=4, pady=10, sticky="w")
 
@@ -176,8 +176,21 @@ class HospitalManagementSystem:
         self.Detail_Frame=Frame(self.master, bd=4, relief= RIDGE, bg="white")
         self.Detail_Frame.place(x=635, y=100, width=870, height=720)
 
+        self.label_filter = Label(self.Detail_Frame, text ="Filtrar por")
+        self.label_filter.grid(row=0, column=0, pady= 0, padx=10, sticky="w")
+
+        self.entry_criteria= ttk.Combobox(self.Detail_Frame, width=10, state="readonly")
+        self.entry_criteria["values"] = ("CIPA", "DNI")
+        self.entry_criteria.grid(row=0, column=1, pady=0, padx=10)
+
+        self.entry_filter_text= Entry(self.Detail_Frame, width=20, bd=3, relief=GROOVE)
+        self.entry_filter_text.grid(row=0, column=2, pady= 0, padx= 20, sticky ="w")
+
+        self.button_filter_by= Button(self.Detail_Frame, text= "Filtrar", width =20, command=self.filter_patients).grid(row=0, column=3, padx=20, pady=10)
+        self.button_show_all= Button(self.Detail_Frame, text= "Mostrar todos", width=20, command=self.fetch_data).grid(row=0, column=4, padx=20, pady=10)
+
         self.Table_Frame= Frame(self.Detail_Frame, bd=4, relief= RIDGE)
-        self.Table_Frame.place(x=10, y=10, width=840, height=690)
+        self.Table_Frame.place(x=10, y=60, width=840, height=640)
 
         self.scroll_x= Scrollbar(self.Table_Frame, orient= HORIZONTAL)
         self.scroll_y= Scrollbar(self.Table_Frame, orient= VERTICAL)
@@ -247,8 +260,6 @@ class HospitalManagementSystem:
         except:
             messagebox.showerror("Error de registro de paciente", "Las credenciales del nuevo paciente no son consistentes.")
             return
-
-        connection.close()
 
         self.clear()
 
@@ -439,3 +450,61 @@ class HospitalManagementSystem:
                 return False
         
         return True
+
+    def filter_patients(self):
+        try:
+            if self.entry_criteria.get() == "CIPA":
+                column = "DNI"
+                value = self.encrypted_DNIs[self.entry_filter_text.get()]
+                print(value)
+
+            elif self.entry_criteria.get() == "DNI":
+                column = "CIPA"
+                value = self.encrypted_CIPAs[self.entry_filter_text.get()]
+                print(value)
+                print(column)
+
+            else:
+                messagebox.showerror("Error de filtrado", "Filtre por un campo válido de los proporcionados.")
+                return
+        except:
+            messagebox.showerror("Error de filtrado", "El " + str(self.entry_criteria.get()) + " introducido no se encuentra registrado.")
+            return
+
+        connection = pymysql.connect(host=self.decrypted_host, user=self.decrypted_user, password=self.decrypted_password, database=self.decrypted_database)
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM PATIENTS WHERE {} = %s".format(column), (value,))
+
+        rows = cursor.fetchall()
+
+        f = Fernet(self.symmetrical_master_key)
+
+        rows_decrypted = []
+
+        for row in rows:
+            row_decrypted = []
+
+            for attribute in row:
+                try:
+                    decrypted_attribute = f.decrypt(str(attribute).encode()).decode()
+                except:
+                    decrypted_attribute = "Corrupto"
+                row_decrypted.append(decrypted_attribute)
+
+            rows_decrypted.append(row_decrypted)
+
+        print(rows_decrypted)
+        if len(rows_decrypted) >= 0:
+            self.treeview_patients.delete(*self.treeview_patients.get_children())
+            for row in rows_decrypted:
+                self.treeview_patients.insert("", END, value=row)
+
+            connection.commit()
+
+        connection.close()
+
+        self.clear()
+
+        self.entry_criteria.delete(0, END)
+        self.entry_filter_text.delete(0, END)
