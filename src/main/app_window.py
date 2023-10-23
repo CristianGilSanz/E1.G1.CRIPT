@@ -19,7 +19,8 @@ class HospitalManagementSystem:
         self.master.title("Gestor de Hospital")
         self.master.geometry("1525x850")
 
-        self.server_connection_window()
+        self.server_connection_window() #Función que crea una ventana de bloqueo previa de acceso al sistema
+                                        #que solicita la clave maestra de acceso al servidor (base de datos MySQL)
 
     def server_connection_window(self):
         self.connection_window = Toplevel(self.master)
@@ -43,7 +44,8 @@ class HospitalManagementSystem:
             server_credentials = json.load(file)
 
         try:
-                
+            #Generamos la clave simétrica de cifrado a partir del SALT público almacenado y la contraseña de acceso al
+            #servidor introducida por el usuario.
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
@@ -60,8 +62,9 @@ class HospitalManagementSystem:
             self.decrypted_database = (f.decrypt(server_credentials["database"].encode())).decode()
 
             self.connection_window.destroy()
-            self.create_widgets()
-                    
+            self.create_widgets() #Función para crear la interfaz de la ventana de HospitalManagementSystem
+
+        #Si la clave es incorrecta, se denega el acceso al servidor
         except:
             messagebox.showerror("Conexión con el servidor", "Acceso denegado.")
             return
@@ -100,7 +103,7 @@ class HospitalManagementSystem:
 
         self.label_gender = Label(self.Manage_Frame, text="Sexo", font=("Arial",15,"bold"))
         self.label_gender.grid(row=5, column=0, pady=10, padx=10, sticky="w")
-        self.entry_gender = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"), state="readonly")
+        self.entry_gender = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"))
         self.entry_gender["values"]=("Masculino", "Femenino", "Otro")
         self.entry_gender.grid(row=5, column=1, pady=10, sticky="w")
 
@@ -126,7 +129,7 @@ class HospitalManagementSystem:
     
         self.label_blood_type = Label(self.Manage_Frame, text="Grupo sanguíneo", font=("Arial",15,"bold"))
         self.label_blood_type.grid(row=1, column=3, pady=10, padx=15, sticky="w")
-        self.entry_blood_type = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"), state="readonly")
+        self.entry_blood_type = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"))
         self.entry_blood_type["values"]=("A+","A-","B+","B-","AB+","AB-","O+","O-")
         self.entry_blood_type.grid(row=1, column=4, pady=10, sticky="w")
 
@@ -179,7 +182,7 @@ class HospitalManagementSystem:
         self.label_filter = Label(self.Detail_Frame, text ="Filtrar por")
         self.label_filter.grid(row=0, column=0, pady= 0, padx=10, sticky="w")
 
-        self.entry_criteria= ttk.Combobox(self.Detail_Frame, width=10, state="readonly")
+        self.entry_criteria= ttk.Combobox(self.Detail_Frame, width=10)
         self.entry_criteria["values"] = ("CIPA", "DNI")
         self.entry_criteria.grid(row=0, column=1, pady=0, padx=10)
 
@@ -231,13 +234,17 @@ class HospitalManagementSystem:
 
         self.fetch_data()
 
-    def add_patient(self):
 
+    def add_patient(self):
         patient_info_status = "Verificado"
 
+        #Comprobamos que los datos del paciente son consistentes con el formato
         if not self.validate_data():
             return
-        
+
+        #Consultamos los diccionarios recuperados de la base de datos con pares cifrados y sin cifrar de DNI y CIPA
+        #respectivamente (y viceversa) para poder mantener la integridad referencial de la base de datos y consistencia
+        #de los pacientes registrados (No insertar pacientes con mismo DNI, cambiar datos inmutables, etc.)
         if self.entry_DNI.get() in self.encrypted_CIPAs.keys():
             messagebox.showerror("Registro de paciente", "El paciente ya está registrado.")
             return
@@ -250,9 +257,12 @@ class HospitalManagementSystem:
             connection = pymysql.connect(host=self.decrypted_host, user=self.decrypted_user, password=self.decrypted_password, database=self.decrypted_database)
             cursor = connection.cursor()
 
+            #Ciframos en tiempo de ejecución los datos del paciente con la clave de cifrado simétrico con la que
+            #recuperamos las credenciales de acceso al servidor para insertar los datos cifrados
             f = Fernet(self.symmetrical_master_key)
-            
-            cursor.execute("INSERT INTO PATIENTS VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(f.encrypt(patient_info_status.encode()).decode(), f.encrypt(self.entry_CIPA.get().encode()).decode(), f.encrypt(self.entry_DNI.get().encode()).decode(), f.encrypt(self.entry_name.get().encode()).decode(), f.encrypt(self.entry_surnames.get().encode()).decode(), f.encrypt(self.entry_gender.get().encode()).decode(), f.encrypt(self.entry_age.get().encode()).decode(), f.encrypt(self.entry_phone.get().encode()).decode(), f.encrypt(self.entry_email.get().encode()).decode(), f.encrypt(self.entry_address.get().encode()).decode(), f.encrypt(self.entry_blood_type.get().encode()).decode(), f.encrypt(self.entry_health_problems.get().encode()).decode(), f.encrypt(self.entry_medicines.get().encode()).decode(), f.encrypt(self.entry_treatments.get().encode()).decode(), f.encrypt(self.entry_vaccines.get().encode()).decode(), f.encrypt(self.entry_next_check_up.get().encode()).decode(), f.encrypt(self.entry_ref_medical_center.get().encode()).decode(), f.encrypt(self.entry_main_doctor.get().encode()).decode()))
+
+            #Insertamos el paciente con su información cifrada
+            cursor.execute("INSERT INTO PATIENTS VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(f.encrypt(patient_info_status.encode()).decode(), f.encrypt(self.entry_CIPA.get().encode()).decode(), f.encrypt(self.entry_DNI.get().encode()).decode(), f.encrypt(self.entry_name.get().encode()).decode(), f.encrypt(self.entry_surnames.get().encode()).decode(), f.encrypt(self.entry_gender.get().encode()).decode(), f.encrypt(self.entry_age.get().encode()).decode(), f.encrypt(self.entry_phone.get().encode()).decode(), f.encrypt(self.entry_email.get().encode()).decode(), f.encrypt(self.entry_address.get().encode()).decode(), f.encrypt(self.entry_blood_type.get().encode()).decode(), f.encrypt(self.entry_health_problems.get().encode()).decode(), f.encrypt(self.entry_medicines.get().encode()).decode(), f.encrypt(self.entry_treatments.get().encode()).decode(), f.encrypt(self.entry_vaccines.get().encode()).decode(), f.encrypt(self.entry_next_check_up.get().encode()).decode(), f.encrypt(self.entry_ref_medical_center.get().encode()).decode(), f.encrypt(self.entry_main_doctor.get().encode()).decode()))
 
             connection.commit()
             connection.close()
@@ -263,6 +273,7 @@ class HospitalManagementSystem:
 
         self.clear()
 
+        #Refrescamos la vista descifrada de los pacientes
         self.fetch_data()
 
         messagebox.showinfo("Registro de paciente", "El paciente ha sido añadido con éxito.")
@@ -276,10 +287,14 @@ class HospitalManagementSystem:
         f = Fernet(self.symmetrical_master_key)
 
         rows_decrypted = []
-        
+
+        #Declaramos los diccionarios para guardar los pares de DNI y CIPA cifrados y sin cifrar respectivamente
+        #(y viceversa) para así poder mantener la integridad referencial de la base de datos y consistencia
+        #de los pacientes registrados. asi como la gestión de los mismos
         self.encrypted_DNIs = {}
         self.encrypted_CIPAs = {}
 
+        #Desencriptmos los registros en tiempo de ejecución para insertarlos visualmente descifrados
         for row in rows:
             list_row = list(row)
 
@@ -288,15 +303,20 @@ class HospitalManagementSystem:
             for attribute in row:
                 try:
                     decrypted_attribute = f.decrypt(str(attribute).encode()).decode()
+                #Si alguno de los datos de un paciente recuperado no puede descifrarse, se etiquta como corrupto. La
+                #información validad y autentificada del paciente ha dejado de estarlo por alguna intrusión.
                 except:
                     decrypted_attribute = "Corrupto"
                 row_decrypted.append(decrypted_attribute)
 
+            #Guardamos los DNI y CIPAS cirados y sin cifrar (y viceversa) de cada paciente para manejarlos de forma
+            #cifrada en la base de datos
             self.encrypted_DNIs[str(row_decrypted[1])]=list_row[2]
             self.encrypted_CIPAs[str(row_decrypted[2])]=list_row[1]
             
             rows_decrypted.append(row_decrypted)   
 
+        #Insertamos en la vista de la app los datos descifrados
         if len(rows_decrypted) >= 0:
             self.treeview_patients.delete(*self.treeview_patients.get_children())
             for row in rows_decrypted:
@@ -306,9 +326,15 @@ class HospitalManagementSystem:
 
         connection.close()
 
+        #Vaciamos los inputs
         self.clear()
+
+        #Vaciamos los inputs de filtrado
+        self.entry_criteria.delete(0, END)
+        self.entry_filter_text.delete(0, END)
         
     def clear(self):
+        #Función para vaciar las entradas de datos para registrar o filtrar pacientes en el sistema
         self.entry_CIPA.delete(0, END)
         self.entry_DNI.delete(0, END)
         self.entry_name.delete(0, END)
@@ -328,6 +354,8 @@ class HospitalManagementSystem:
         self.entry_main_doctor.delete(0, END)
 
     def get_cursor(self, ev):
+        #Función para recuperar los datos de información del paciente y que se sobreescriban en los inputs para su
+        #manejo
         cursor_row = self.treeview_patients.focus()
         
         if cursor_row:
@@ -355,18 +383,19 @@ class HospitalManagementSystem:
             self.entry_main_doctor.insert(0,row[17])
 
     def update_data(self):
+        #Función para actualizar información no inmutable de un paciente
         if not self.validate_data():
             return
 
         f = Fernet(self.symmetrical_master_key)
 
         try:
-            #Si el CIPA no esta en el diccionario salta error
+            #Si el CIPA no esta en el diccionario, el paciente no está registrado
             current_DNI = self.encrypted_DNIs[self.entry_CIPA.get()]
-            #Si el DNI no está en ningun diccionario
+            #Si el DNI no está en el diccionario, el paciente no está registrado
             current_CIPA = self.encrypted_CIPAs[self.entry_DNI.get()]
         except:
-            messagebox.showerror("Registro de paciente", "El paciente que trata de actualizar no es consistente.\n\nCIPA y DNI no son modificables")
+            messagebox.showerror("Actualización de paciente", "La información del paciente que trata de actualizar es inmutable.\n\nCIPA y DNI no son modificables")
             return
         
         patient_info_status = "Verificado"
@@ -374,45 +403,56 @@ class HospitalManagementSystem:
         connection = pymysql.connect(host=self.decrypted_host, user=self.decrypted_user, password=self.decrypted_password, database=self.decrypted_database)
         cursor = connection.cursor()
 
+        #Actualizamos el paciente, cifrando de nuevo toda su información, inclusive los datos actualizados
         cursor.execute("UPDATE PATIENTS SET `Estado del reg.`=%s, `CIPA`=%s, `Nombre`=%s, `Apellidos`=%s, `Sexo`=%s, `Edad`=%s, `Teléfono`=%s, `Email`=%s, `Dirección`=%s, `Grupo sanguíneo`=%s, `Patología/s`=%s, `Medicamento/s`=%s, `Tratamiento/s`=%s, `Vacunas`=%s, `Próx. revisión`=%s, `Centro médico de ref.`=%s, `Médico de cabecera`=%s where `DNI`=%s",(f.encrypt(patient_info_status.encode()).decode(), f.encrypt(self.entry_CIPA.get().encode()).decode(), f.encrypt(self.entry_name.get().encode()).decode(), f.encrypt(self.entry_surnames.get().encode()).decode(), f.encrypt(self.entry_gender.get().encode()).decode(), f.encrypt(self.entry_age.get().encode()).decode(), f.encrypt(self.entry_phone.get().encode()).decode(), f.encrypt(self.entry_email.get().encode()).decode(), f.encrypt(self.entry_address.get().encode()).decode(), f.encrypt(self.entry_blood_type.get().encode()).decode(), f.encrypt(self.entry_health_problems.get().encode()).decode(), f.encrypt(self.entry_medicines.get().encode()).decode(), f.encrypt(self.entry_treatments.get().encode()).decode(), f.encrypt(self.entry_vaccines.get().encode()).decode(), f.encrypt(self.entry_next_check_up.get().encode()).decode(), f.encrypt(self.entry_ref_medical_center.get().encode()).decode(), f.encrypt(self.entry_main_doctor.get().encode()).decode(), current_DNI))
 
         connection.commit()
-        
+
+        #Refrescamos la vista descifrada de los pacientes
         self.fetch_data()
 
+        #Vaciamos los inputs
         self.clear()
             
         connection.close()
 
         messagebox.showinfo("Registro de paciente", "El paciente ha sido actualizado con éxito.")
-            
-    
+
     def delete_data(self):
-        current_DNI = self.encrypted_DNIs[self.entry_CIPA.get()]
+        #Función para borrar un paciente
+        try:
+            current_DNI = self.encrypted_DNIs[self.entry_CIPA.get()]
+        except:
+            messagebox.showerror("Error de borrado de paciente", "Coloquesé de nuevo sobre el paciente a borrar.")
+            return
 
         connection = pymysql.connect(host=self.decrypted_host, user=self.decrypted_user, password=self.decrypted_password, database=self.decrypted_database)
         cursor = connection.cursor()
         
+        #Borramos el paciente filtrando por su DNI cifrado (clave primaria)
         cursor.execute("DELETE FROM PATIENTS WHERE `DNI`=%s", current_DNI)
 
         connection.commit()
 
+        #Refrescamos la vista descifrada de los pacientes
         self.fetch_data()
 
+        #Vaciamos los inputs
         self.clear()
 
         connection.close()
 
-        messagebox.showinfo("Registro de paciente", "El paciente ha sido eliminado con éxito.")
+        messagebox.showinfo("Borrado de paciente", "El paciente ha sido eliminado con éxito.")
     
     def validate_data(self):
+        #Función para validar el formato de los campos de información del paciente a insertar o actualizar
         regex_CIPA = r"^\d{11}$"
         regex_DNI = r"^\d{8}[A-HJ-NP-TV-Z]$"
         regex_name = r"^[A-ZÁÉÍÓÚÜ][a-záéíóúü]+(?: [A-ZÁÉÍÓÚÜ][a-záéíóúü]+)?$"
         regex_surnames = r"^[A-ZÁÉÍÓÚÜ][a-záéíóúü]+(?: [A-ZÁÉÍÓÚÜ][a-záéíóúü]+)?$"
         regex_gender = r"^(Masculino|Femenino|Otro)$"
         regex_age = r"^(?:[0-9]|[1-9][0-9]|1[0-4][0-9])$|150$"
-        regex_phone = r"^(?:\+34|0034|34)?[6789]\d{8}$"
+        regex_phone = r"^(?:\+34|0034|34)[6789]\d{8}$"
         regex_email = r"^\S+@\S+\.\S+$"
         regex_address = r"^.+$"
         regex_blood_type = r"^(A\+|A-|B\+|B-|AB\+|AB-|O\+|O-)$"
@@ -452,21 +492,21 @@ class HospitalManagementSystem:
         return True
 
     def filter_patients(self):
+        #Función para filtrar un paciente por su DNI o CIPA
         try:
+            #Analizamos por que campo se esta filtrando y comprobamos si hay algún paciente con ese valor de campo
             if self.entry_criteria.get() == "CIPA":
                 column = "DNI"
                 value = self.encrypted_DNIs[self.entry_filter_text.get()]
-                print(value)
 
             elif self.entry_criteria.get() == "DNI":
                 column = "CIPA"
                 value = self.encrypted_CIPAs[self.entry_filter_text.get()]
-                print(value)
-                print(column)
-
+            #Si el campo no existe, es erróneo o vacío, se notifica del error de filtrado
             else:
                 messagebox.showerror("Error de filtrado", "Filtre por un campo válido de los proporcionados.")
                 return
+        #Si no exite el paciente filtrado, se indica por pantalla
         except:
             messagebox.showerror("Error de filtrado", "El " + str(self.entry_criteria.get()) + " introducido no se encuentra registrado.")
             return
@@ -474,6 +514,7 @@ class HospitalManagementSystem:
         connection = pymysql.connect(host=self.decrypted_host, user=self.decrypted_user, password=self.decrypted_password, database=self.decrypted_database)
         cursor = connection.cursor()
 
+        #Se recupera el paciente con dichas características
         cursor.execute("SELECT * FROM PATIENTS WHERE {} = %s".format(column), (value,))
 
         rows = cursor.fetchall()
@@ -493,8 +534,7 @@ class HospitalManagementSystem:
                 row_decrypted.append(decrypted_attribute)
 
             rows_decrypted.append(row_decrypted)
-
-        print(rows_decrypted)
+        #Se insertan los pacientes recuperando con los datos coincidente en la vista descifrada del sistema
         if len(rows_decrypted) >= 0:
             self.treeview_patients.delete(*self.treeview_patients.get_children())
             for row in rows_decrypted:
@@ -504,7 +544,5 @@ class HospitalManagementSystem:
 
         connection.close()
 
+        #Vaciamos los inputs generales
         self.clear()
-
-        self.entry_criteria.delete(0, END)
-        self.entry_filter_text.delete(0, END)

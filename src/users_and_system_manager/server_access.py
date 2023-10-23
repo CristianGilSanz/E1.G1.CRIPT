@@ -8,7 +8,6 @@ import base64
 import sys
 import pymysql
 
-
 old_master_key = str(input("\nIntroduce la contraseña maestra: "))
 
 with open("../JsonFiles/server_credentials.json", "r") as file:
@@ -44,7 +43,6 @@ connection = pymysql.connect(host=decrypted_host, user=decrypted_user, password=
 cursor = connection.cursor()
 cursor.execute("SELECT * FROM PATIENTS")
 rows = cursor.fetchall()
-
 
 if rows:
     for row in rows:
