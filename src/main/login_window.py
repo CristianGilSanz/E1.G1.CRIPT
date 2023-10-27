@@ -76,6 +76,7 @@ class LoginWindow:
                     #Desencriptamos su contraseña y clave de 2FA
                     decrypted_password = (f.decrypt(user_account["pass"].encode())).decode()
                     decrypted_token = (f.decrypt(user_account["tokenPass"].encode())).decode()
+
                 #Si la clave es incorrecta, se denega el acceso
                 except:
                     messagebox.showerror("Error de inicio de sesión", "Credenciales incorrectas")

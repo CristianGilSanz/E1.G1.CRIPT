@@ -14,11 +14,10 @@ with open("../JsonFiles/server_credentials.json", "r") as file:
     server_credentials = json.load(file)
 
 try:
-    #Desencriptar
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt= bytes.fromhex(server_credentials["salt"]),
+        salt=bytes.fromhex(server_credentials["salt"]),
         iterations=480000,
     )
                         
@@ -55,7 +54,7 @@ if rows:
             print("La base de datos presenta entradas modificadas o corruptas. Por favor suprimalas antes de continuar.")
             sys.exit()
         
-        cursor.execute("DELETE FROM PATIENTS WHERE `DNI`=%s", (DNI))
+        cursor.execute("DELETE FROM PATIENTS WHERE `DNI`=%s", DNI)
         cursor.execute("INSERT INTO PATIENTS (`Estado del reg.`, `CIPA`, `DNI` ,`Nombre`, `Apellidos`, `Sexo`, `Edad`, `Teléfono`, `Email`, `Dirección`, `Grupo sanguíneo`, `Patología/s`, `Medicamento/s`, `Tratamiento/s`, `Vacunas`, `Próx. revisión`, `Centro médico de ref.`, `Médico de cabecera`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (tuple(row_decrypted)))
         connection.commit()
 
@@ -78,7 +77,7 @@ kdf = PBKDF2HMAC(
     iterations=480000,
 )
 
-symmetrical_new_master_key=base64.urlsafe_b64encode(kdf.derive(new_master_key.encode()))
+symmetrical_new_master_key = base64.urlsafe_b64encode(kdf.derive(new_master_key.encode()))
 
 t = Fernet(symmetrical_new_master_key)
 
@@ -110,31 +109,11 @@ for row in rows:
     
     row_encrypted = ([t.encrypt(str(attribute).encode()).decode() for attribute in row])
    
-    cursor.execute("DELETE FROM PATIENTS WHERE `DNI`=%s", (DNI))
+    cursor.execute("DELETE FROM PATIENTS WHERE `DNI`=%s", DNI)
 
-    cursor.execute("INSERT INTO PATIENTS (`Estado del reg.`, `CIPA`, `DNI` ,`Nombre`, `Apellidos`, `Sexo`, `Edad`, `Teléfono`, `Email`, `Dirección`, `Grupo sanguíneo`, `Patología/s`, `Medicamento/s`, `Tratamiento/s`, `Vacunas`, `Próx. revisión`, `Centro médico de ref.`, `Médico de cabecera`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (tuple(row_encrypted)))   
+    cursor.execute("INSERT INTO PATIENTS (`Estado del reg.`, `CIPA`, `DNI`, `Nombre`, `Apellidos`, `Sexo`, `Edad`, `Teléfono`, `Email`, `Dirección`, `Grupo sanguíneo`, `Patología/s`, `Medicamento/s`, `Tratamiento/s`, `Vacunas`, `Próx. revisión`, `Centro médico de ref.`, `Médico de cabecera`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (tuple(row_encrypted)))
     connection.commit()        
 
 connection.close()
 
 print("\nLas credenciales del sistema se han cifrado y guardado correctamente con la nueva clave maestra.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

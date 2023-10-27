@@ -4,7 +4,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 import json
 
-#--------------PEER KEYS--------------#
 peer_private_key = ec.generate_private_key(
     ec.SECP384R1(), default_backend()
 )
@@ -36,19 +35,8 @@ updated_signup_users_credentials = json.dumps(signup_users_credentials, indent=2
 with open("../JsonFiles/signup_users_credentials.json", "w") as file:
     file.write(updated_signup_users_credentials)
     
-print("\n##############    ----- PEER PRIVADA -----    ##############\n")
+print("\n##############    ----- PEER: CLAVE PRIVADA -----    ##############\n")
 print(pem_peer_private_key.decode())
 
-print("\n##############    ----- PEER PÚBLICA -----    ##############\n")
+print("\n##############    ----- PEER: CLAVE PÚBLICA -----    ##############\n")
 print(pem_peer_public_key.decode())
-
-
-
-
-
-
-
-
-
-
-

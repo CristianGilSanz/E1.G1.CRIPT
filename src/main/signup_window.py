@@ -3,10 +3,10 @@ from tkinter import messagebox
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec
 import base64
 import pyotp
 
@@ -27,7 +27,7 @@ class SignUpWindow:
         self.master.title("Crear cuenta")
         self.master.geometry("500x700")
 
-        self.create_widgets() #Función para crear la interfaz de la ventana de LogIn
+        self.create_widgets()  #Función para crear la interfaz de la ventana de LogIn
     
     def create_widgets(self):
         self.label_daily_server_access_key = tk.Label(self.master, text="Cl@VE DE ACCESO AL SERVIDOR")
@@ -95,7 +95,7 @@ class SignUpWindow:
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
-                salt= bytes.fromhex(server_credentials["salt"]),
+                salt=bytes.fromhex(server_credentials["salt"]),
                 iterations=480000,
             )
 
@@ -126,18 +126,27 @@ class SignUpWindow:
         with open("../JsonFiles/signup_users_credentials.json", "r") as file:
             signup_users_credentials = json.load(file)
 
+        #Buscamos si el usuario esta autorizado para su registro y guardamos su clave pública
+        found_DNI = False
+        pem_peer_public_key= None
+
         for new_user_account in signup_users_credentials:
-            #Si el DNI del usuario no se encuentra pendiente para registro, la petición de registro queda denegada
-            if new_user_account["DNI"] != DNI:
-                self.master.withdraw()
-                messagebox.showerror("Error de registro", "Petición denegada")
-                self.master.deiconify()
-                return
+            if new_user_account["DNI"] == DNI:
+                pem_peer_public_key = new_user_account["public_key"]
+                found_DNI = True
+                break
 
-            #Obtenemos la clave pública del usuario que se quiere registrar
-            pem_peer_public_key = new_user_account["public_key"]
+        if not found_DNI:
+            self.master.withdraw()
+            messagebox.showerror("Error de registro", "DNI no registrado")
+            self.master.deiconify()
+            return
 
+        #Recuperamos el par de claves de cifrado asimétrico del servidor y comprobamos si la clave privada del
+        #usuario genera la misma clave compartida o 'handshake'
+        try:
             #Desearializamos la clave privada y pública del sistema tras ser desencriptada
+
             #--------------SERVER KEYS: Deserializar--------------#
 
             not_serialised_server_private_key = serialization.load_pem_private_key(
@@ -152,6 +161,7 @@ class SignUpWindow:
             )
 
             #Deserializamos la clave privada (introducida por el usuario) y pública del usuario a registrarse
+
             #--------------PEER KEYS: Deserializar--------------#
 
             not_serialised_peer_private_key = serialization.load_pem_private_key(
@@ -180,8 +190,15 @@ class SignUpWindow:
                 self.master.deiconify()
                 return
 
+        #De lo contrario, se deniega la petición
+        except:
+            self.master.withdraw()
+            messagebox.showerror("Error de registro", "Petición denegada")
+            self.master.deiconify()
+            return
+
         #Verificamos que el nombre de usuario ha de ser no vacío
-        if new_username=="":
+        if new_username == "":
             self.master.withdraw()
             messagebox.showerror("Error de registro", "Introduzca un nombre de usuario")
             self.master.deiconify()
@@ -214,7 +231,7 @@ class SignUpWindow:
                 return
 
         #Si la contraseña no es segura, se solicita otra
-        if not re.match(r'(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\u0020-\u002f\u003A-\u0040\u005B-\u0060\u007B-\u007E]).{8,}',new_password):
+        if not re.match(r'(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\u0020-\u002f\u003A-\u0040\u005B-\u0060\u007B-\u007E]).{8,}', new_password):
             self.master.withdraw()
             messagebox.showerror("Error de registro", "La contraseña ha de contener:\n\n   ·Mínimo 8 caracteres de longitud.\n   ·Al menos una letra minúscula.\n   ·Al menos una letra mayúscula.\n   ·Al menos un dígito.\n   ·Al menos un carácter especial.")
             self.master.deiconify()
@@ -255,7 +272,7 @@ Centro de Salud CryptoShield'''.format(new_username)
         otp_0 = pyotp.random_base32()
         uri = pyotp.totp.TOTP(otp_0).provisioning_uri(name= new_username, issuer_name="HospitalManagementSystem")
 
-        qr_save_path = "E1.G1.CRIPT/src/temp_outputs/" + str(new_username) + "_qrcode.png"
+        qr_save_path = "../temp_outputs/" + str(new_username) + "_qrcode.png"
         
         qrcode.make(uri).save(qr_save_path)
         

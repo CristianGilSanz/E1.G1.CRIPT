@@ -19,8 +19,8 @@ class HospitalManagementSystem:
         self.master.title("Gestor de Hospital")
         self.master.geometry("1525x850")
 
-        self.server_connection_window() #Función que crea una ventana de bloqueo previa de acceso al sistema
-                                        #que solicita la clave maestra de acceso al servidor (base de datos MySQL)
+        self.server_connection_window()  #Función que crea una ventana de bloqueo previa de acceso al sistema
+                                         #que solicita la clave maestra de acceso al servidor (base de datos MySQL)
 
     def server_connection_window(self):
         self.connection_window = Toplevel(self.master)
@@ -72,131 +72,131 @@ class HospitalManagementSystem:
     def create_widgets(self):
         self.master.attributes('-topmost', True)
 
-        self.title = Label(self.master, text="Centro de Salud: CryptoShield", bd=8, relief= GROOVE, font=("Arial",40,"bold"), bg="white", fg="black")
+        self.title = Label(self.master, text="Centro de Salud: CryptoShield", bd=8, relief=GROOVE, font=("Arial",40,"bold"), bg="white", fg="black")
         self.title.pack(side=TOP, fill= X, padx=20, pady=10)
 
         self.Manage_Frame=Frame(self.master, bd=4, relief= RIDGE, bg="white")
         self.Manage_Frame.place(x=20, y=100, width=605, height=720)
 
-        self.manage_title = Label(self.Manage_Frame, text="Gestor de Pacientes", font=("Arial",40,"bold"))
+        self.manage_title = Label(self.Manage_Frame, text="Gestor de Pacientes", font=("Arial",40,"bold"), bg="white")
         self.manage_title.grid(row= 0, columnspan=7, pady=20)
 
-        self.label_CIPA = Label(self.Manage_Frame, text="CIPA", font=("Arial",15,"bold"))
+        self.label_CIPA = Label(self.Manage_Frame, text="CIPA", font=("Arial",15,"bold"), bg="white")
         self.label_CIPA.grid(row=1, column=0, pady=10, padx=10, sticky="w")
-        self.entry_CIPA = Entry(self.Manage_Frame, width= 10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_CIPA = Entry(self.Manage_Frame, width= 10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_CIPA.grid(row=1, column=1, pady=10, sticky="w")
 
-        self.label_DNI = Label(self.Manage_Frame, text="DNI", font=("Arial",15,"bold"))
+        self.label_DNI = Label(self.Manage_Frame, text="DNI", font=("Arial",15,"bold"), bg="white")
         self.label_DNI.grid(row=2, column=0, pady=10, padx=10, sticky="w")
-        self.entry_DNI = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_DNI = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_DNI.grid(row=2, column=1, pady=10, sticky="w")
 
-        self.label_name = Label(self.Manage_Frame, text="Nombre", font=("Arial",15,"bold"))
+        self.label_name = Label(self.Manage_Frame, text="Nombre", font=("Arial",15,"bold"), bg="white")
         self.label_name.grid(row=3, column=0, pady=10, padx=10, sticky="w")
-        self.entry_name = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_name = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_name.grid(row=3, column=1, pady=10, sticky="w")
 
-        self.label_surnames = Label(self.Manage_Frame, text="Apellidos", font=("Arial",15,"bold"))
+        self.label_surnames = Label(self.Manage_Frame, text="Apellidos", font=("Arial",15,"bold"), bg="white")
         self.label_surnames.grid(row=4, column=0, pady=10, padx=10, sticky="w")
-        self.entry_surnames = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_surnames = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_surnames.grid(row=4, column=1, pady=10, sticky="w")
 
-        self.label_gender = Label(self.Manage_Frame, text="Sexo", font=("Arial",15,"bold"))
+        self.label_gender = Label(self.Manage_Frame, text="Sexo", font=("Arial",15,"bold"), bg="white")
         self.label_gender.grid(row=5, column=0, pady=10, padx=10, sticky="w")
         self.entry_gender = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"))
         self.entry_gender["values"]=("Masculino", "Femenino", "Otro")
         self.entry_gender.grid(row=5, column=1, pady=10, sticky="w")
 
-        self.label_age = Label(self.Manage_Frame, text="Edad", font=("Arial",15,"bold"))
+        self.label_age = Label(self.Manage_Frame, text="Edad", font=("Arial",15,"bold"), bg="white")
         self.label_age.grid(row=6, column=0, pady=10, padx=10, sticky="w")
-        self.entry_age = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_age = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_age.grid(row=6, column=1, pady=10, sticky="w")
 
-        self.label_phone = Label(self.Manage_Frame, text="Teléfono", font=("Arial",15,"bold"))
+        self.label_phone = Label(self.Manage_Frame, text="Teléfono", font=("Arial",15,"bold"), bg="white")
         self.label_phone.grid(row=7, column=0, pady=10, padx=10, sticky="w")
-        self.entry_phone = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_phone = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_phone.grid(row=7, column=1, pady=10, sticky="w")
 
-        self.label_email = Label(self.Manage_Frame, text="Email", font=("Arial",15,"bold"))
+        self.label_email = Label(self.Manage_Frame, text="Email", font=("Arial",15,"bold"), bg="white")
         self.label_email.grid(row=8, column=0, pady=10, padx=10, sticky="w")
-        self.entry_email = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_email = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_email.grid(row=8, column=1, pady=10, sticky="w")
 
-        self.label_address = Label(self.Manage_Frame, text="Dirección", font=("Arial",15,"bold"))
+        self.label_address = Label(self.Manage_Frame, text="Dirección", font=("Arial",15,"bold"), bg="white")
         self.label_address.grid(row=9, column=0, pady=10, padx=10, sticky="w")
-        self.entry_address = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_address = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_address.grid(row=9, column=1, pady=10, sticky="w")
     
-        self.label_blood_type = Label(self.Manage_Frame, text="Grupo sanguíneo", font=("Arial",15,"bold"))
+        self.label_blood_type = Label(self.Manage_Frame, text="Grupo sanguíneo", font=("Arial",15,"bold"), bg="white")
         self.label_blood_type.grid(row=1, column=3, pady=10, padx=15, sticky="w")
         self.entry_blood_type = ttk.Combobox(self.Manage_Frame, width=9, font=("Courier",15,"bold"))
         self.entry_blood_type["values"]=("A+","A-","B+","B-","AB+","AB-","O+","O-")
         self.entry_blood_type.grid(row=1, column=4, pady=10, sticky="w")
 
-        self.label_health_problems = Label(self.Manage_Frame, text="Patología/s", font=("Arial",15,"bold"))
+        self.label_health_problems = Label(self.Manage_Frame, text="Patología/s", font=("Arial",15,"bold"), bg="white")
         self.label_health_problems.grid(row=2, column=3, pady=10, padx=15, sticky="w")
-        self.entry_health_problems = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_health_problems = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_health_problems.grid(row=2, column=4, pady=10, sticky="w")
 
-        self.label_medicines = Label(self.Manage_Frame, text="Medicamento/s", font=("Arial",15,"bold"))
+        self.label_medicines = Label(self.Manage_Frame, text="Medicamento/s", font=("Arial",15,"bold"), bg="white")
         self.label_medicines.grid(row=3, column=3, pady=10, padx=15, sticky="w")
-        self.entry_medicines = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_medicines = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_medicines.grid(row=3, column=4, pady=10, sticky="w")
 
-        self.label_treatments = Label(self.Manage_Frame, text="Tratamiento/s", font=("Arial",15,"bold"))
+        self.label_treatments = Label(self.Manage_Frame, text="Tratamiento/s", font=("Arial",15,"bold"), bg="white")
         self.label_treatments.grid(row=4, column=3, pady=10, padx=15, sticky="w")
-        self.entry_treatments = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_treatments = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_treatments.grid(row=4, column=4, pady=10, sticky="w")
 
-        self.label_vaccines = Label(self.Manage_Frame, text="Vacunas", font=("Arial",15,"bold"))
+        self.label_vaccines = Label(self.Manage_Frame, text="Vacunas", font=("Arial",15,"bold"), bg="white")
         self.label_vaccines.grid(row=5, column=3, pady=10, padx=15, sticky="w")
-        self.entry_vaccines = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_vaccines = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_vaccines.grid(row=5, column=4, pady=10, sticky="w")
 
-        self.label_next_check_up = Label(self.Manage_Frame, text="Próx. revisión", font=("Arial",15,"bold"))
+        self.label_next_check_up = Label(self.Manage_Frame, text="Próx. revisión", font=("Arial",15,"bold"), bg="white")
         self.label_next_check_up.grid(row=6, column=3, pady=10, padx=15, sticky="w")
         self.entry_next_check_up = DateEntry(self.Manage_Frame, date_pattern='dd/mm/yyyy', width=18)
         self.entry_next_check_up.grid(row=6, column=4, pady=10, sticky="w")
 
-        self.label_ref_medical_center = Label(self.Manage_Frame, text="Centro médico de ref. ", font=("Arial",10,"bold"))
+        self.label_ref_medical_center = Label(self.Manage_Frame, text="Centro médico de ref. ", font=("Arial",10,"bold"), bg="white")
         self.label_ref_medical_center.grid(row=7, column=3, pady=10, padx=10, sticky="w")
-        self.entry_ref_medical_center = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_ref_medical_center = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_ref_medical_center.grid(row=7, column=4, pady=10, sticky="w")
 
-        self.label_main_doctor = Label(self.Manage_Frame, text="Médico de cabecera", font=("Arial",10,"bold"))
+        self.label_main_doctor = Label(self.Manage_Frame, text="Médico de cabecera", font=("Arial",10,"bold"), bg="white")
         self.label_main_doctor.grid(row=8, column=3, pady=10, padx=10, sticky="w")
-        self.entry_main_doctor = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief= GROOVE)
+        self.entry_main_doctor = Entry(self.Manage_Frame, width=10, font=("Courier",15,"bold"), bd=5, relief=GROOVE)
         self.entry_main_doctor.grid(row=8, column=4, pady=10, sticky="w")
 
         self.Button_Frame = Frame(self.Manage_Frame, bd=4, relief= RIDGE, bg="white")
         self.Button_Frame.place(x=10, y=620, width=575,)
 
-        self.button_add = Button(self.Button_Frame, text= "Añadir", width=10, command=self.add_patient).grid(row=0, column=0, padx=30, pady=20)
-        self.button_update = Button(self.Button_Frame, text= "Actualizar", width=10, command=self.update_data).grid(row=0, column=1, padx=30, pady=20)
-        self.button_delete = Button(self.Button_Frame, text= "Eliminar", width=10, command=self.delete_data).grid(row=0, column=2, padx=30, pady=20)
-        self.button_clear = Button(self.Button_Frame, text= "Vaciar", width=10, command=self.clear).grid(row=0, column=3, padx=30, pady=20)
+        self.button_add = Button(self.Button_Frame, text="Añadir", width=10, command=self.add_patient).grid(row=0, column=0, padx=30, pady=20)
+        self.button_update = Button(self.Button_Frame, text="Actualizar", width=10, command=self.update_data).grid(row=0, column=1, padx=30, pady=20)
+        self.button_delete = Button(self.Button_Frame, text="Eliminar", width=10, command=self.delete_data).grid(row=0, column=2, padx=30, pady=20)
+        self.button_clear = Button(self.Button_Frame, text="Vaciar", width=10, command=self.clear).grid(row=0, column=3, padx=30, pady=20)
 
-        self.Detail_Frame=Frame(self.master, bd=4, relief= RIDGE, bg="white")
+        self.Detail_Frame=Frame(self.master, bd=4, relief=RIDGE, bg="white")
         self.Detail_Frame.place(x=635, y=100, width=870, height=720)
 
-        self.label_filter = Label(self.Detail_Frame, text ="Filtrar por")
-        self.label_filter.grid(row=0, column=0, pady= 0, padx=10, sticky="w")
+        self.label_filter = Label(self.Detail_Frame, text="Filtrar por", bg="white")
+        self.label_filter.grid(row=0, column=0, pady=0, padx=10, sticky="w")
 
         self.entry_criteria= ttk.Combobox(self.Detail_Frame, width=10)
         self.entry_criteria["values"] = ("CIPA", "DNI")
         self.entry_criteria.grid(row=0, column=1, pady=0, padx=10)
 
         self.entry_filter_text= Entry(self.Detail_Frame, width=20, bd=3, relief=GROOVE)
-        self.entry_filter_text.grid(row=0, column=2, pady= 0, padx= 20, sticky ="w")
+        self.entry_filter_text.grid(row=0, column=2, pady= 0, padx=20, sticky="w")
 
-        self.button_filter_by= Button(self.Detail_Frame, text= "Filtrar", width =20, command=self.filter_patients).grid(row=0, column=3, padx=20, pady=10)
+        self.button_filter_by= Button(self.Detail_Frame, text= "Filtrar", width=20, command=self.filter_patients).grid(row=0, column=3, padx=20, pady=10)
         self.button_show_all= Button(self.Detail_Frame, text= "Mostrar todos", width=20, command=self.fetch_data).grid(row=0, column=4, padx=20, pady=10)
 
         self.Table_Frame= Frame(self.Detail_Frame, bd=4, relief= RIDGE)
         self.Table_Frame.place(x=10, y=60, width=840, height=640)
 
-        self.scroll_x= Scrollbar(self.Table_Frame, orient= HORIZONTAL)
-        self.scroll_y= Scrollbar(self.Table_Frame, orient= VERTICAL)
+        self.scroll_x= Scrollbar(self.Table_Frame, orient=HORIZONTAL)
+        self.scroll_y= Scrollbar(self.Table_Frame, orient=VERTICAL)
         
         self.treeview_patients= ttk.Treeview(self.Table_Frame, columns=("Estado del reg.","CIPA", "DNI", "Nombre", "Apellidos", "Sexo", "Edad", "Teléfono", "Email", "Dirección", "Grupo sanguíneo", "Patología/s", "Medicamento/s", "Tratamiento/s", "Vacunas", "Próx. revisión", "Centro médico de ref.", "Médico de cabecera"), xscrollcommand=self.scroll_x.set, yscrollcommand=self.scroll_y.set)
 
@@ -304,9 +304,10 @@ class HospitalManagementSystem:
                 try:
                     decrypted_attribute = f.decrypt(str(attribute).encode()).decode()
                 #Si alguno de los datos de un paciente recuperado no puede descifrarse, se etiquta como corrupto. La
-                #información validad y autentificada del paciente ha dejado de estarlo por alguna intrusión.
+                #información validada y autentificada del paciente ha dejado de estarlo por alguna intrusión.
                 except:
                     decrypted_attribute = "Corrupto"
+
                 row_decrypted.append(decrypted_attribute)
 
             #Guardamos los DNI y CIPAS cirados y sin cifrar (y viceversa) de cada paciente para manejarlos de forma
