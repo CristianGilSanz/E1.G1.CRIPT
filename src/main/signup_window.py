@@ -3,9 +3,11 @@ from tkinter import messagebox
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
+from cryptography import x509
+from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import serialization
 import base64
 import pyotp
@@ -42,12 +44,6 @@ class SignUpWindow:
         self.entry_DNI = tk.Entry(self.master, width=35)
         self.entry_DNI.pack(pady=5)
 
-        self.label_pem_peer_private_key = tk.Label(self.master, text="Cl@ve privada")
-        self.label_pem_peer_private_key.pack(pady=5)
-
-        self.entry_pem_peer_private_key = tk.Entry(self.master, show="*", width=35)
-        self.entry_pem_peer_private_key.pack(pady=5)
-
         self.label_new_username = tk.Label(self.master, text="Nuevo nombre de usuario")
         self.label_new_username.pack(pady=5)
 
@@ -79,7 +75,6 @@ class SignUpWindow:
         #Obtenemos los datos introducidos en los inputs
         daily_server_access_key = self.entry_daily_server_access_key.get()
         DNI = self.entry_DNI.get()
-        pem_peer_private_key = self.entry_pem_peer_private_key.get()
         new_username = self.entry_new_username.get()
         email= self.entry_email.get()
         new_password = self.entry_new_password.get()
@@ -117,112 +112,44 @@ class SignUpWindow:
         #Si la clave maestra es incorrecta se deniega la petición de registro
         except:
             self.master.withdraw()
-            messagebox.showerror("Error de registro", "Petición denegada")
+            messagebox.showerror("Error de registro", "Clave de acceso incorrecta")
             self.master.deiconify()
             return
 
-        #Si las credenciales de solicitud al servidor son correctas, examinamos el fichero de usuarios autorizados
-        #pendientes de registro
-        with open("../JsonFiles/signup_users_credentials.json", "r") as file:
-            signup_users_credentials = json.load(file)
-
-        #Buscamos si el usuario esta autorizado para su registro y guardamos su clave pública
-        found_DNI = False
-        pem_peer_public_key= None
-
-        for new_user_account in signup_users_credentials:
-            if new_user_account["DNI"] == DNI:
-                pem_peer_public_key = new_user_account["public_key"]
-                found_DNI = True
-                break
-
-        if not found_DNI:
+        if not re.match(r"^\d{8}[A-HJ-NP-TV-Z]$", DNI):
             self.master.withdraw()
-            messagebox.showerror("Error de registro", "DNI no registrado")
+            messagebox.showerror("Error de registro", "El DNI no es válido")
             self.master.deiconify()
             return
 
-        #Recuperamos el par de claves de cifrado asimétrico del servidor y comprobamos si la clave privada del
-        #usuario genera la misma clave compartida o 'handshake'
-        try:
-            #Desearializamos la clave privada y pública del sistema tras ser desencriptada
 
-            #--------------SERVER KEYS: Deserializar--------------#
-
-            not_serialised_server_private_key = serialization.load_pem_private_key(
-                decrypted_pem_server_private_key.encode(),
-                password=None,
-                backend=default_backend()
-            )
-
-            not_serialised_server_public_key = serialization.load_pem_public_key(
-                decrypted_pem_server_public_key.encode(),
-                backend=default_backend()
-            )
-
-            #Deserializamos la clave privada (introducida por el usuario) y pública del usuario a registrarse
-
-            #--------------PEER KEYS: Deserializar--------------#
-
-            not_serialised_peer_private_key = serialization.load_pem_private_key(
-                pem_peer_private_key.encode(),
-                password=None,
-                backend=default_backend()
-            )
-
-            not_serialised_peer_public_key = serialization.load_pem_public_key(
-                pem_peer_public_key.encode(),
-                backend=default_backend()
-            )
-
-            #--------------HANDSHAKES--------------#
-            shared_key_server_peer = not_serialised_server_private_key.exchange(
-            ec.ECDH(), not_serialised_peer_public_key)
-
-            shared_key_peer_server = not_serialised_peer_private_key.exchange(
-            ec.ECDH(), not_serialised_server_public_key)
-
-            #Comprobamos que los pares de claves (privadas y públicas cruzadas) del usuario y el sistema generan
-            #el mismo 'handshake' (cifrado asimétrico)
-            if shared_key_server_peer != shared_key_peer_server:
-                self.master.withdraw()
-                messagebox.showerror("Error de registro", "Petición denegada")
-                self.master.deiconify()
-                return
-
-        #De lo contrario, se deniega la petición
-        except:
-            self.master.withdraw()
-            messagebox.showerror("Error de registro", "Petición denegada")
-            self.master.deiconify()
-            return
-
-        #Verificamos que el nombre de usuario ha de ser no vacío
+        # Verificamos que el nombre de usuario ha de ser no vacío
         if new_username == "":
             self.master.withdraw()
             messagebox.showerror("Error de registro", "Introduzca un nombre de usuario")
             self.master.deiconify()
             return
 
-        #Inspeccionamos las cuentas ya registradas para registrar cuentas unívocas
+        # Inspeccionamos las cuentas ya registradas para registrar cuentas unívocas
         with open("../JsonFiles/login_users_credentials.json", "r") as file:
             login_users_credentials = json.load(file)
 
-        #Si el nombre de usuario ya está registrado, pedimos otro
+        # Si el nombre de usuario ya está registrado, pedimos otro
         for user_account in login_users_credentials:
             if user_account["username"] == new_username:
                 self.master.withdraw()
                 messagebox.showerror("Error de registro", "El nombre de usuario ya está en uso")
                 self.master.deiconify()
                 return
-        #Si el email no presenta un formato válido, se pide de nuevo
-        if not re.match(r'^[\w.-]+@[\w.-]+\.\w+$',email):
+
+        # Si el email no presenta un formato válido, se pide de nuevo
+        if not re.match(r'^[\w.-]+@[\w.-]+\.\w+$', email):
             self.master.withdraw()
             messagebox.showerror("Error de registro", "Introduzca una dirección de correo válida")
             self.master.deiconify()
             return
 
-        #Si el email está en uso por otro usuario, se pide otro
+        # Si el email está en uso por otro usuario, se pide otro
         for user_account in login_users_credentials:
             if user_account["email"] == email:
                 self.master.withdraw()
@@ -230,19 +157,50 @@ class SignUpWindow:
                 self.master.deiconify()
                 return
 
-        #Si la contraseña no es segura, se solicita otra
-        if not re.match(r'(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\u0020-\u002f\u003A-\u0040\u005B-\u0060\u007B-\u007E]).{8,}', new_password):
+            # Si la contraseña no es segura, se solicita otra
+        if not re.match(r'(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\u0020-\u002f\u003A-\u0040\u005B-\u0060\u007B-\u007E]).{8,}',new_password):
             self.master.withdraw()
-            messagebox.showerror("Error de registro", "La contraseña ha de contener:\n\n   ·Mínimo 8 caracteres de longitud.\n   ·Al menos una letra minúscula.\n   ·Al menos una letra mayúscula.\n   ·Al menos un dígito.\n   ·Al menos un carácter especial.")
+            messagebox.showerror("Error de registro","La contraseña ha de contener:\n\n   ·Mínimo 8 caracteres de longitud.\n   ·Al menos una letra minúscula.\n   ·Al menos una letra mayúscula.\n   ·Al menos un dígito.\n   ·Al menos un carácter especial.")
             self.master.deiconify()
             return
 
-        #Si las contraseñas no coinciden, se pide revisarlas
+        # Si las contraseñas no coinciden, se pide revisarlas
         if new_password != confirm_password:
             self.master.withdraw()
             messagebox.showerror("Error de registro", "Las contraseñas no coinciden.")
             self.master.deiconify()
             return
+
+        peer_private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend()
+        )
+
+        peer_private_key_pem_filename = f"{new_username}_PK.pem"
+
+
+        with open("../AC/USERS_PRIVATE_KEYS/" + peer_private_key_pem_filename, "wb") as f:
+            f.write(peer_private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.BestAvailableEncryption(new_password.encode()),
+            ))
+
+        csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
+            x509.NameAttribute(NameOID.EMAIL_ADDRESS, email),
+            x509.NameAttribute(NameOID.COMMON_NAME, new_username),
+            x509.NameAttribute(NameOID.USER_ID, DNI),
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "ES"),
+            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Madrid"),
+            x509.NameAttribute(NameOID.LOCALITY_NAME, "Madrid"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Centro de Salud CryptoShield"),
+        ])).sign(peer_private_key, hashes.SHA256())
+
+        csr_filename = f"{new_username}_CSR.pem"
+
+        with open("../AC/CSR/"+ csr_filename, "wb") as f:
+            f.write(csr.public_bytes(serialization.Encoding.PEM))
 
         #Construimos los datos necesarios para enviar un correo vía protocolo TLS a la dirección de correo del usuario
         #para notificarle de que su cuenta ha sido correctamente registrada, y adjuntarle un código QR con su 2FA
@@ -315,22 +273,12 @@ Centro de Salud CryptoShield'''.format(new_username)
         with open("../JsonFiles/login_users_credentials.json", "w") as file:
             file.write(new_login_users_credentials)
 
-        #Borramos las credenciales del usuario del fichero de personal autorizado pendiente de registro
-        for new_user_account in signup_users_credentials:
-            if new_user_account["DNI"] == DNI:
-                signup_users_credentials.remove(new_user_account)
-        
-        updated_signup_users_credentials = json.dumps(signup_users_credentials, indent=2) 
-
-        with open("../JsonFiles/signup_users_credentials.json", "w") as file:
-            file.write(updated_signup_users_credentials)
 
         #Eliminamos el QR generado que porporciona el 2FA al usuario que acaba de registrarse
         os.remove(qr_save_path)
 
         #Limpiamos los campos y destruimos la ventana una vez el registro se ha completado con éxito
         self.entry_DNI.delete(0, tk.END)
-        self.entry_pem_peer_private_key.delete(0, tk.END)
         self.entry_email.delete(0, tk.END)
         self.entry_new_username.delete(0, tk.END)
         self.entry_new_password.delete(0, tk.END)

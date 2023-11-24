@@ -1,0 +1,27 @@
+Paso 0) Descargar el programa e instalar las librerías indicadas en el fichero de texto requirements.txt (pip install -r requirements.txt)
+	Cualquier complicación, 100454460@alumnos.uc3m.es ó 100454248@alumnos.uc3m.es para consultarnos. 
+
+Paso 1) Ejecutar asymetric_user_key_generator.py
+
+	Para que al usuario se le generen las claves privada y pública y pase a ser 
+	un usuario autorizado a registrarse. 
+
+Paso 2) Copiar la clave privada generada
+
+Paso 3) Ejecutar main.py 
+
+PASO 4) Pulsar botón: ¿No tienes cuenta? Regístrate
+
+PASO 5) Rellenar los campos y en concreto: 
+
+	"Clave del servidor": 12345
+	"Clave privada": clave privada copiada previamente 
+
+PASO 6) Consultar la bandeja de entrada de tu correo y escanear el QR con Google Authenticator 
+
+PASO 7) Iniciar sesión usando tus credenciales y el código 2FA en tiempo real
+
+PASO 8) Introducir de nuevo la clase maestra para poder acceder definitivamente al servidor (12345) 
+
+PASO 9) Ya estas dentro del sistema, ¡podrás utilizar el gestor de pacientes!
+

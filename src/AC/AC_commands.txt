@@ -1,0 +1,21 @@
+CLAVE PRIVADA DE AC:
+"C:\Program Files\OpenSSL-Win64\bin\openssl" genpkey -algorithm RSA -out ac_private_key.pem
+
+CERTIFICADO AUTOFIRMADO DE AC:
+"C:\Program Files\OpenSSL-Win64\bin\openssl" req -x509 -new -key ac_private_key.pem -out ac_cert.pem
+
+VERIFICAR EL AUTOFIRMADO GENERADO:
+"C:\Program Files\OpenSSL-Win64\bin\openssl" x509 -in ac_cert.pem -text -noout
+
+VISUALIZAR EL CSR:
+"C:\Program Files\OpenSSL-Win64\bin\openssl" req -in CSR/Paolita_CSR.pem -text -noout
+
+FIRMAR EL CSR:
+"C:\Program Files\OpenSSL-Win64\bin\openssl" x509 -req -in CSR/Paolita_CSR.pem -CA ac_cert.pem -CAkey ac_private_key.pem -out USERS_CERTIFICATES/Paolita_CERT.pem -days 365 -sha256
+
+VISUALIZAR EL CERTIFICADO:
+"C:\Program Files\OpenSSL-Win64\bin\openssl" x509 -in USERS_CERTIFICATES/Paolita_CERT.pem -text -noout
+
+
+
+
