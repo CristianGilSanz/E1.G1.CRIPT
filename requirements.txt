@@ -1,7 +1,7 @@
 Babel==2.13.0
 cffi==1.16.0
 colorama==0.4.6
-cryptography==41.0.4
+cryptography==41.0.5
 pycparser==2.21
 PyMySQL==1.1.0
 pyotp==2.9.0

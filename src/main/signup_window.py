@@ -123,18 +123,18 @@ class SignUpWindow:
             return
 
 
-        # Verificamos que el nombre de usuario ha de ser no vacío
+        #Verificamos que el nombre de usuario ha de ser no vacío
         if new_username == "":
             self.master.withdraw()
             messagebox.showerror("Error de registro", "Introduzca un nombre de usuario")
             self.master.deiconify()
             return
 
-        # Inspeccionamos las cuentas ya registradas para registrar cuentas unívocas
+        #Inspeccionamos las cuentas ya registradas para registrar cuentas unívocas
         with open("../JsonFiles/login_users_credentials.json", "r") as file:
             login_users_credentials = json.load(file)
 
-        # Si el nombre de usuario ya está registrado, pedimos otro
+        #Si el nombre de usuario ya está registrado, pedimos otro
         for user_account in login_users_credentials:
             if user_account["username"] == new_username:
                 self.master.withdraw()
@@ -142,14 +142,14 @@ class SignUpWindow:
                 self.master.deiconify()
                 return
 
-        # Si el email no presenta un formato válido, se pide de nuevo
+        #Si el email no presenta un formato válido, se pide de nuevo
         if not re.match(r'^[\w.-]+@[\w.-]+\.\w+$', email):
             self.master.withdraw()
             messagebox.showerror("Error de registro", "Introduzca una dirección de correo válida")
             self.master.deiconify()
             return
 
-        # Si el email está en uso por otro usuario, se pide otro
+        #Si el email está en uso por otro usuario, se pide otro
         for user_account in login_users_credentials:
             if user_account["email"] == email:
                 self.master.withdraw()
@@ -157,20 +157,21 @@ class SignUpWindow:
                 self.master.deiconify()
                 return
 
-            # Si la contraseña no es segura, se solicita otra
+        #Si la contraseña no es segura, se solicita otra
         if not re.match(r'(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\u0020-\u002f\u003A-\u0040\u005B-\u0060\u007B-\u007E]).{8,}',new_password):
             self.master.withdraw()
             messagebox.showerror("Error de registro","La contraseña ha de contener:\n\n   ·Mínimo 8 caracteres de longitud.\n   ·Al menos una letra minúscula.\n   ·Al menos una letra mayúscula.\n   ·Al menos un dígito.\n   ·Al menos un carácter especial.")
             self.master.deiconify()
             return
 
-        # Si las contraseñas no coinciden, se pide revisarlas
+        #Si las contraseñas no coinciden, se pide revisarlas
         if new_password != confirm_password:
             self.master.withdraw()
             messagebox.showerror("Error de registro", "Las contraseñas no coinciden.")
             self.master.deiconify()
             return
 
+        #Se genera una clave privada para el usuario
         peer_private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
@@ -179,7 +180,7 @@ class SignUpWindow:
 
         peer_private_key_pem_filename = f"{new_username}_PK.pem"
 
-
+        #Serializamos y ciframos su clave privada con su contraseña en formato PEM
         with open("../AC/USERS_PRIVATE_KEYS/" + peer_private_key_pem_filename, "wb") as f:
             f.write(peer_private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
@@ -187,10 +188,11 @@ class SignUpWindow:
                 encryption_algorithm=serialization.BestAvailableEncryption(new_password.encode()),
             ))
 
+        #Generamos la petición del certificado digital a AC con los datos del usuario
         csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
-            x509.NameAttribute(NameOID.EMAIL_ADDRESS, email),
             x509.NameAttribute(NameOID.COMMON_NAME, new_username),
             x509.NameAttribute(NameOID.USER_ID, DNI),
+            x509.NameAttribute(NameOID.EMAIL_ADDRESS, email),
             x509.NameAttribute(NameOID.COUNTRY_NAME, "ES"),
             x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Madrid"),
             x509.NameAttribute(NameOID.LOCALITY_NAME, "Madrid"),

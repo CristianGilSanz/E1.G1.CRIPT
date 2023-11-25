@@ -7,6 +7,10 @@ from tkinter import messagebox
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.backends import default_backend
+from cryptography import x509
+from cryptography.x509.oid import NameOID
 import base64
 import pyotp
 
@@ -88,6 +92,35 @@ class LoginWindow:
                 #Si el token subyacente a la clave es el indicado en el instante de ingreso...
                 if totp.verify(token_input):
 
+                    user_cert_path = f"../AC/USERS_CERTIFICATES/{username_input}_CERT.pem"
+
+                    #Verificar si el certificado existe
+                    try:
+                        with open(user_cert_path, "rb") as f:
+                            user_cert_pem = f.read()
+                    except:
+                        messagebox.showerror("Error de inicio de sesión", "El certificado del usuario no ha sido aceptado por CryptoShield AC.")
+                        return
+
+                    user_cert = x509.load_pem_x509_certificate(user_cert_pem, default_backend())
+
+                    #Verificar la firma digital del certificado del usuario con la clave pública de la AC
+                    try:
+                        with open("../AC/ac_cert.pem", "rb") as f:
+                            ac_cert_pem = f.read()
+
+                        ac_cert = x509.load_pem_x509_certificate(ac_cert_pem, default_backend())
+
+                        ac_cert.public_key().verify(
+                            user_cert.signature,
+                            user_cert.tbs_certificate_bytes,
+                            padding.PKCS1v15(),
+                            user_cert.signature_hash_algorithm,
+                        )
+                    except:
+                        messagebox.showerror("Error de inicio de sesión", "No se ha podido verificar la firma del certificado")
+                        return
+
                     #Generamos un nuevo SALT, para generar una clave de cifrado simétrica diferente a la anterior
                     salt = os.urandom(16)
 
@@ -107,6 +140,7 @@ class LoginWindow:
 
                     user_account["pass"] = password_encrypted.decode()
                     user_account["tokenPass"] = otp_0_encrypted.decode()
+
                     #Almacenamos el nuevo SALT (SALT dinámico por cada inicio de sesión)
                     user_account["salt"] = str(salt.hex())
 
@@ -118,7 +152,7 @@ class LoginWindow:
                     #Se permite el acceso al gestor
                     self.master.destroy()
                     hospitalMngWnd = tk.Tk()
-                    HospitalManagementSystem(hospitalMngWnd)
+                    HospitalManagementSystem(hospitalMngWnd, username_input, password_input, user_cert)
                     return
             
         messagebox.showerror("Error de inicio de sesión", "Credenciales incorrectas")

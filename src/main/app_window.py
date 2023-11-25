@@ -6,6 +6,11 @@ from tkcalendar import DateEntry
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+import hashlib
+import binascii
 import base64
 
 import json
@@ -14,10 +19,14 @@ import re
 import pymysql
 
 class HospitalManagementSystem:
-    def __init__(self, master):
+    def __init__(self, master, current_user, current_user_password, user_cert):
         self.master = master
         self.master.title("Gestor de Hospital")
         self.master.geometry("1525x850")
+
+        self.current_user = current_user
+        self.current_user_password = current_user_password
+        self.user_cert = user_cert
 
         self.server_connection_window()  #Función que crea una ventana de bloqueo previa de acceso al sistema
                                          #que solicita la clave maestra de acceso al servidor (base de datos MySQL)
@@ -198,7 +207,7 @@ class HospitalManagementSystem:
         self.scroll_x= Scrollbar(self.Table_Frame, orient=HORIZONTAL)
         self.scroll_y= Scrollbar(self.Table_Frame, orient=VERTICAL)
         
-        self.treeview_patients= ttk.Treeview(self.Table_Frame, columns=("Estado del reg.","CIPA", "DNI", "Nombre", "Apellidos", "Sexo", "Edad", "Teléfono", "Email", "Dirección", "Grupo sanguíneo", "Patología/s", "Medicamento/s", "Tratamiento/s", "Vacunas", "Próx. revisión", "Centro médico de ref.", "Médico de cabecera"), xscrollcommand=self.scroll_x.set, yscrollcommand=self.scroll_y.set)
+        self.treeview_patients= ttk.Treeview(self.Table_Frame, columns=("CIPA", "DNI", "Nombre", "Apellidos", "Sexo", "Edad", "Teléfono", "Email", "Dirección", "Grupo sanguíneo", "Patología/s", "Medicamento/s", "Tratamiento/s", "Vacunas", "Próx. revisión", "Centro médico de ref.", "Médico de cabecera"), xscrollcommand=self.scroll_x.set, yscrollcommand=self.scroll_y.set)
 
         self.scroll_x.pack(side=BOTTOM, fill=X)
         self.scroll_y.pack(side=RIGHT, fill=Y)
@@ -206,7 +215,6 @@ class HospitalManagementSystem:
         self.scroll_x.config(command=self.treeview_patients.xview)
         self.scroll_y.config(command=self.treeview_patients.yview)
 
-        self.treeview_patients.heading("Estado del reg.", text="Estado del reg.")
         self.treeview_patients.heading("CIPA", text="CIPA")
         self.treeview_patients.heading("DNI", text="DNI")
         self.treeview_patients.heading("Nombre", text="Nombre")
@@ -236,8 +244,6 @@ class HospitalManagementSystem:
 
 
     def add_patient(self):
-        patient_info_status = "Verificado"
-
         #Comprobamos que los datos del paciente son consistentes con el formato
         if not self.validate_data():
             return
@@ -253,16 +259,74 @@ class HospitalManagementSystem:
             messagebox.showerror("Registro de paciente", "El paciente ya esta registrado.")
             return
 
-        try:
-            connection = pymysql.connect(host=self.decrypted_host, user=self.decrypted_user, password=self.decrypted_password, database=self.decrypted_database)
-            cursor = connection.cursor()
 
-            #Ciframos en tiempo de ejecución los datos del paciente con la clave de cifrado simétrico con la que
-            #recuperamos las credenciales de acceso al servidor para insertar los datos cifrados
+        connection = pymysql.connect(host=self.decrypted_host, user=self.decrypted_user, password=self.decrypted_password, database=self.decrypted_database)
+        cursor = connection.cursor()
+        print("1")
+
+        fields_to_encrypt = [
+            self.entry_CIPA.get(),
+            self.entry_DNI.get(),
+            self.entry_name.get(),
+            self.entry_surnames.get(),
+            self.entry_gender.get(),
+            self.entry_age.get(),
+            self.entry_phone.get(),
+            self.entry_email.get(),
+            self.entry_address.get(),
+            self.entry_blood_type.get(),
+            self.entry_health_problems.get(),
+            self.entry_medicines.get(),
+            self.entry_treatments.get(),
+            self.entry_vaccines.get(),
+            self.entry_next_check_up.get(),
+            self.entry_ref_medical_center.get(),
+            self.entry_main_doctor.get()
+        ]
+
+        #Ciframos en tiempo de ejecución los datos del paciente con la clave de cifrado simétrico con la que
+        #recuperamos las credenciales de acceso al servidor para insertar los datos cifrados
+        try:
             f = Fernet(self.symmetrical_master_key)
 
+            fields_to_sign = [f.encrypt(field.encode()).decode() for field in fields_to_encrypt]
+
+            private_key_path = f"../AC/USERS_PRIVATE_KEYS/{self.current_user}_PK.pem"
+
+            with open(private_key_path, "rb") as key_file:
+                private_key = serialization.load_pem_private_key(
+                    key_file.read(),
+                    password= self.current_user_password.encode(),  # Ingresa la contraseña si la clave privada está protegida por contraseña
+                    backend=default_backend()
+                )
+
+            signature_fields = [private_key.sign(
+                field.encode(),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            ) for field in fields_to_sign]
+
+            hex_signatures = [binascii.hexlify(sig).decode() for sig in signature_fields]
+
+            public_key = self.user_cert.public_key()
+
+            public_key_bytes = public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+
+            #Ahora adjunta la clave pública a la lista de hex_signatures
+            hex_signatures.append(public_key_bytes.decode())
+
+            hashed_signatures = [hashlib.sha256(sig.encode()).hexdigest() for sig in hex_signatures]
+
+            print(hashed_signatures)
+
             #Insertamos el paciente con su información cifrada
-            cursor.execute("INSERT INTO PATIENTS VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(f.encrypt(patient_info_status.encode()).decode(), f.encrypt(self.entry_CIPA.get().encode()).decode(), f.encrypt(self.entry_DNI.get().encode()).decode(), f.encrypt(self.entry_name.get().encode()).decode(), f.encrypt(self.entry_surnames.get().encode()).decode(), f.encrypt(self.entry_gender.get().encode()).decode(), f.encrypt(self.entry_age.get().encode()).decode(), f.encrypt(self.entry_phone.get().encode()).decode(), f.encrypt(self.entry_email.get().encode()).decode(), f.encrypt(self.entry_address.get().encode()).decode(), f.encrypt(self.entry_blood_type.get().encode()).decode(), f.encrypt(self.entry_health_problems.get().encode()).decode(), f.encrypt(self.entry_medicines.get().encode()).decode(), f.encrypt(self.entry_treatments.get().encode()).decode(), f.encrypt(self.entry_vaccines.get().encode()).decode(), f.encrypt(self.entry_next_check_up.get().encode()).decode(), f.encrypt(self.entry_ref_medical_center.get().encode()).decode(), f.encrypt(self.entry_main_doctor.get().encode()).decode()))
+            cursor.execute("INSERT INTO PATIENTS VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", tuple(hashed_signatures))
 
             connection.commit()
             connection.close()
@@ -294,14 +358,41 @@ class HospitalManagementSystem:
         self.encrypted_DNIs = {}
         self.encrypted_CIPAs = {}
 
+
+
         #Desencriptmos los registros en tiempo de ejecución para insertarlos visualmente descifrados
         for row in rows:
             list_row = list(row)
+
+            public_key_pem_hashed = list_row[-1]
+            print(public_key_pem_hashed)
+
+            #Deshacer el hash de la clave pública
+            recovered_public_key_pem = hashlib.sha256(public_key_pem_hashed.encode()).hexdigest()
+            print(recovered_public_key_pem)
+
+            #Ahora, recuperar la clave pública original en formato PEM
+            recovered_public_key_bytes = recovered_public_key_pem.encode()
+            print(recovered_public_key_bytes)
+
+
+
+
+            original_signatures = [bytes.fromhex(hashlib.sha256(sig.encode()).hexdigest()) for sig in
+                                   list_row[:-1]]
+
+
 
             row_decrypted = []
 
             for attribute in row:
                 try:
+
+
+                    #DESFIRMAR ANTES DE DESCIFRAR
+
+
+
                     decrypted_attribute = f.decrypt(str(attribute).encode()).decode()
                 #Si alguno de los datos de un paciente recuperado no puede descifrarse, se etiquta como corrupto. La
                 #información validada y autentificada del paciente ha dejado de estarlo por alguna intrusión.
