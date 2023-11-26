@@ -3,12 +3,16 @@ from tkinter import messagebox
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
+
 from cryptography import x509
 from cryptography.x509.oid import NameOID
+
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+
 import base64
 import pyotp
 
@@ -170,10 +174,10 @@ class SignUpWindow:
             backend=default_backend()
         )
 
-        peer_private_key_pem_filename = f"{new_username}_PK.pem"
+        peer_private_key_pem_path = f"../AC/USERS_PRIVATE_KEYS/{new_username}_PK.pem"
 
         #Serializamos y ciframos su clave privada con su contraseña en formato PEM
-        with open("../AC/USERS_PRIVATE_KEYS/" + peer_private_key_pem_filename, "wb") as f:
+        with open(peer_private_key_pem_path, "wb") as f:
             f.write(peer_private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,
@@ -191,9 +195,9 @@ class SignUpWindow:
             x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Centro de Salud CryptoShield"),
         ])).sign(peer_private_key, hashes.SHA256())
 
-        csr_filename = f"{new_username}_CSR.pem"
+        csr_path = f"../AC/CSR/{new_username}_CSR.pem"
 
-        with open("../AC/CSR/" + csr_filename, "wb") as f:
+        with open(csr_path, "wb") as f:
             f.write(csr.public_bytes(serialization.Encoding.PEM))
 
         #Construimos los datos necesarios para enviar un correo vía protocolo TLS a la dirección de correo del usuario

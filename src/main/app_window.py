@@ -5,13 +5,13 @@ from tkcalendar import DateEntry
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
 import base64
-
 
 import json
 import re
@@ -495,20 +495,18 @@ class HospitalManagementSystem:
         messagebox.showinfo("Registro de paciente", "El paciente ha sido actualizado con éxito.")
 
     def delete_data(self, update=False):
-
         #Función para borrar un paciente
+
         try:
             current_DNI = self.encrypted_DNIs[self.entry_CIPA.get()]
         except:
             messagebox.showerror("Error de borrado de paciente", "Coloquesé de nuevo sobre el paciente a borrar.")
             return
 
-
         #Borramos el paciente filtrando por su DNI cifrado (clave primaria)
         with open("../JsonFiles/patients_data.json", "r") as file:
             patients_data = json.load(file)
 
-        # Desencriptmos los registros en tiempo de ejecución para insertarlos visualmente descifrados
         for row in patients_data:
             if row[1]==current_DNI:
                 patients_data.remove(row)
@@ -593,7 +591,6 @@ class HospitalManagementSystem:
             messagebox.showerror("Error de filtrado", "El " + str(self.entry_criteria.get()) + " introducido no se encuentra registrado.")
             return
 
-
         #Se recupera el paciente con dichas características
         with open("../JsonFiles/patients_data.json", "r") as file:
             patients_data = json.load(file)
@@ -618,7 +615,7 @@ class HospitalManagementSystem:
 
                 patients_decrypted.append(row_decrypted)
 
-        #Se insertan los pacientes recuperando con los datos coincidente en la vista descifrada del sistema
+        #Se insertan los pacientes recuperados con los datos coincidentes al filtro en la vista descifrada del sistema
         if len(patients_decrypted) >= 0:
             self.treeview_patients.delete(*self.treeview_patients.get_children())
             for row in patients_decrypted:
