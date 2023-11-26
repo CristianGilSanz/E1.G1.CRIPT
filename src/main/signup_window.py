@@ -98,16 +98,8 @@ class SignUpWindow:
             f = Fernet(symmetrical_master_key)
 
             #Desencriptamos las credenciales de identidad y acceso del servidor
-            decrypted_pem_server_private_key = (f.decrypt(server_credentials["pem_server_private_key"].encode())).decode()
-                
-            decrypted_pem_server_public_key = (f.decrypt(server_credentials["pem_server_public_key"].encode())).decode()
 
             decrypted_sender_pass = (f.decrypt(server_credentials["sender_pass"].encode())).decode()
-
-            decrypted_host = (f.decrypt(server_credentials["host"].encode())).decode()
-            decrypted_user = (f.decrypt(server_credentials["user"].encode())).decode()
-            decrypted_password = (f.decrypt(server_credentials["password"].encode())).decode()
-            decrypted_database = (f.decrypt(server_credentials["database"].encode())).decode()
 
         #Si la clave maestra es incorrecta se deniega la petición de registro
         except:
@@ -201,7 +193,7 @@ class SignUpWindow:
 
         csr_filename = f"{new_username}_CSR.pem"
 
-        with open("../AC/CSR/"+ csr_filename, "wb") as f:
+        with open("../AC/CSR/" + csr_filename, "wb") as f:
             f.write(csr.public_bytes(serialization.Encoding.PEM))
 
         #Construimos los datos necesarios para enviar un correo vía protocolo TLS a la dirección de correo del usuario
