@@ -1,27 +1,49 @@
-Paso 0) Descargar el programa e instalar las librerías indicadas en el fichero de texto requirements.txt (pip install -r requirements.txt)
-	Cualquier complicación, 100454460@alumnos.uc3m.es ó 100454248@alumnos.uc3m.es para consultarnos. 
+Paso 0) Abrir el proyecto en IDE e instalar las librerías indicadas en el fichero de texto requirements.txt
 
-Paso 1) Ejecutar asymetric_user_key_generator.py
+        Para ello, ejecutar "pip install -r requirements.txt" en la raíz del proyecto.
 
-	Para que al usuario se le generen las claves privada y pública y pase a ser 
-	un usuario autorizado a registrarse. 
+Paso 1) Ejecutar main.py
 
-Paso 2) Copiar la clave privada generada
+Paso 2) Pulsar el botón para registrarse:
 
-Paso 3) Ejecutar main.py 
+        ¿No tienes cuenta? Regístrate"
 
-PASO 4) Pulsar botón: ¿No tienes cuenta? Regístrate
+Paso 3) Rellenar el formulario con datos verosímiles.
 
-PASO 5) Rellenar los campos y en concreto: 
+        "CL@VE DE ACCESO AL SERVIDOR" : "12345".
 
-	"Clave del servidor": 12345
-	"Clave privada": clave privada copiada previamente 
+        Esta clave es la que se encuentre activa para la aplicación/servidor en el estado actual
+        del proyecto, pero podrá cambiarse cuando se desee ejecutando "server_access_mamanger.py".
 
-PASO 6) Consultar la bandeja de entrada de tu correo y escanear el QR con Google Authenticator 
+        Se simula que este ejcutable solo estaría disponible para personal autorizado y encargado de la
+        administración del sistema, los cuales podrán rotar dicha clave por seguridad y comunicarsela a
+        los trabajdores.
 
-PASO 7) Iniciar sesión usando tus credenciales y el código 2FA en tiempo real
+PASO 4) Esperar a que la AC acepte la solicitud de creación de tu cuenta, es decir, genere tu certificado.
 
-PASO 8) Introducir de nuevo la clase maestra para poder acceder definitivamente al servidor (12345) 
+        Para ello, ejecutar en nombre de la autoridad de certificación, desde el directorio src/AC,
+        el siguiente script:
 
-PASO 9) Ya estas dentro del sistema, ¡podrás utilizar el gestor de pacientes!
+        ".\CheckUsersCertificateTraceability.ps1 -username <nombre_de_usuario>"
 
+        En la ejecución del script, el terminal solicitará la entrada de la contraseña de cifrado con la que
+        se encuentra protegida la clave privada de la entidad, necesaria para aceptar la petición de certificados
+        de los usuarios (CSR).
+
+        Contraseña: "12345"
+
+        PRE-REQUISITOS:
+        Tener instalado el soporte de OpenSSL para Windows.
+        El instalador se encuentra en la raíz del proyecto: "Win64OpenSSL_Light-3_1_4.exe"
+
+PASO 5) Consultar la bandeja de entrada de tu correo y escanear el QR con Google Authenticator
+
+PASO 6) Iniciar sesión usando tus credenciales y el código 2FA en tiempo real
+
+PASO 8) Introducir de nuevo la clave de acceso al servidor en el cuadro de diálogo que aparece.
+
+        "Clave de acceso al servidor" : "12345"
+
+PASO 9) Una vez dentro del sistema, podrá gestionar las citas de los pacientes junto a sus datos médicos.
+
+Cualquier complicación, contacte con 100454460@alumnos.uc3m.es ó 100454248@alumnos.uc3m.es para consultarnos.
