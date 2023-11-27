@@ -259,6 +259,7 @@ class HospitalManagementSystem:
             messagebox.showerror("Registro de paciente", "El paciente ya esta registrado.")
             return
 
+        #Recuperamos de los inputs los datos del paciente
         fields_to_encrypt = [
             self.entry_CIPA.get(),
             self.entry_DNI.get(),
@@ -281,7 +282,6 @@ class HospitalManagementSystem:
 
         #Ciframos en tiempo de ejecución los datos del paciente con la clave de cifrado simétrico con la que
         #recuperamos las credenciales de acceso al servidor para insertar los datos cifrados
-
         try:
 
             f = Fernet(self.symmetrical_master_key)
@@ -290,6 +290,7 @@ class HospitalManagementSystem:
 
             private_key_path = f"../AC/USERS_PRIVATE_KEYS/{self.current_user}_PK.pem"
 
+            #Recuperamos la clave privada del usuario para firmar cada paciente que este inserta
             with open(private_key_path, "rb") as key_file:
                 private_key = serialization.load_pem_private_key(
                     key_file.read(),
@@ -297,9 +298,9 @@ class HospitalManagementSystem:
                     backend=default_backend()
                 )
 
+            #Firmamos la concatenación de los atributos cifrados
             original_message = ''.join(encrypted_fields).encode()
 
-            #Firmamos la concatenación de los atributos cifrados
             signed_record = private_key.sign(
                 original_message,
                 padding.PSS(
@@ -309,6 +310,7 @@ class HospitalManagementSystem:
                 hashes.SHA256()
             ) #La firma está en hexadecimal
 
+            #Agregamos al registro dos atributos, la clave pública del firmante y la firma generada sobre los datos
             public_key = self.user_cert.public_key()
 
             public_key_bytes = public_key.public_bytes(
@@ -319,7 +321,7 @@ class HospitalManagementSystem:
             encrypted_fields.append(public_key_bytes.decode())
             encrypted_fields.append(signed_record.hex())
 
-            #Insertamos el paciente con su información cifrada
+            #Insertamos el paciente con su información cifrada en la base de datos
             with open("../JsonFiles/patients_data.json", "r") as file:
                 patients_data = json.load(file)
 
@@ -382,7 +384,8 @@ class HospitalManagementSystem:
 
             signed_record = bytes.fromhex(row[-1])
 
-            #Verificamos la firma
+            #Además, vemos si la firma que hay en el registro del paciente se verifica con la concatenación de los datos
+            #de este en el momento de recuperarlos, y  a su vez, con la clave pública del que lo firmó con su privada
             try:
                 public_key.verify(
                     signed_record,
@@ -399,7 +402,7 @@ class HospitalManagementSystem:
             
             patients_decrypted.append(row_decrypted)
 
-        #Insertamos en la vista de la app los datos descifrados
+        #Insertamos en la vista de la aplicación los datos descifrados
         if len(patients_decrypted) >= 0:
             self.treeview_patients.delete(*self.treeview_patients.get_children())
             for row in patients_decrypted:

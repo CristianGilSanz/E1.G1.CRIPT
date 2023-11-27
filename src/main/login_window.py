@@ -96,7 +96,7 @@ class LoginWindow:
 
                     user_cert_path = f"../AC/USERS_CERTIFICATES/{username_input}_CERT.pem"
 
-                    #Verificar si el certificado existe
+                    #Verificamos si el certificado existe
                     try:
                         with open(user_cert_path, "rb") as f:
                             user_cert_pem = f.read()
@@ -106,7 +106,7 @@ class LoginWindow:
 
                     user_cert = x509.load_pem_x509_certificate(user_cert_pem, default_backend())
 
-                    #Verificar la firma digital del certificado del usuario con la clave pública de la AC
+                    #Verificamos el certificado, ya aceptado, con la clave pública de autofirmado de la AC
                     try:
                         with open("../AC/ac_cert.pem", "rb") as f:
                             ac_cert_pem = f.read()

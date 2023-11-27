@@ -84,7 +84,7 @@ class SignUpWindow:
         new_password = self.entry_new_password.get()
         confirm_password = self.entry_confirm_password.get()
 
-        #Abrimos el fichero JSON con las credenciales del servidor (base de datos MySQL)
+        #Abrimos el fichero JSON con las credenciales del servidor
         with open("../JsonFiles/server_credentials.json", "r") as file:
             server_credentials = json.load(file)
 
@@ -102,7 +102,6 @@ class SignUpWindow:
             f = Fernet(symmetrical_master_key)
 
             #Desencriptamos las credenciales de identidad y acceso del servidor
-
             decrypted_sender_pass = (f.decrypt(server_credentials["sender_pass"].encode())).decode()
 
         #Si la clave maestra es incorrecta se deniega la petición de registro
@@ -112,12 +111,12 @@ class SignUpWindow:
             self.master.deiconify()
             return
 
+        #Verificamos que el DNI pueda ser válido
         if not re.match(r"^\d{8}[A-HJ-NP-TV-Z]$", DNI):
             self.master.withdraw()
             messagebox.showerror("Error de registro", "El DNI no es válido")
             self.master.deiconify()
             return
-
 
         #Verificamos que el nombre de usuario ha de ser no vacío
         if new_username == "":
@@ -224,7 +223,7 @@ Centro de Salud CryptoShield'''.format(new_username)
         
         message.attach(MIMEText(mail_content, 'plain'))
 
-        #Se general la clave primaria del generador de tokens temporales para el 2FA del sistema
+        #Se genera la clave primaria del generador de tokens temporales para el 2FA del sistema
         otp_0 = pyotp.random_base32()
         uri = pyotp.totp.TOTP(otp_0).provisioning_uri(name= new_username, issuer_name="HospitalManagementSystem")
 
