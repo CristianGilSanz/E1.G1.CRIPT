@@ -344,6 +344,143 @@ class HospitalManagementSystem:
         if update == False:
             messagebox.showinfo("Registro de paciente", "El paciente ha sido añadido con éxito.")
 
+    def delete_data(self, update=False):
+        #Función para borrar un paciente
+
+        try:
+            current_DNI = self.encrypted_DNIs[self.entry_CIPA.get()]
+        except:
+            messagebox.showerror("Error de borrado de paciente", "Coloquesé de nuevo sobre el paciente a borrar.")
+            return
+
+        #Borramos el paciente filtrando por su DNI cifrado (clave primaria)
+        with open("../JsonFiles/patients_data.json", "r") as file:
+            patients_data = json.load(file)
+
+        for row in patients_data:
+            if row[1]==current_DNI:
+                patients_data.remove(row)
+
+        updated_patients_data = json.dumps(patients_data, indent=2)
+
+        with open("../JsonFiles/patients_data.json", "w") as file:
+            file.write(updated_patients_data)
+
+        if update == False:
+            #Refrescamos la vista descifrada de los pacientes
+            self.fetch_data()
+
+            #Vaciamos los inputs
+            self.clear()
+
+            messagebox.showinfo("Borrado de paciente", "El paciente ha sido eliminado con éxito.")
+
+    def update_data(self):
+        #Función para actualizar información no inmutable de un paciente
+        if not self.validate_data():
+            return
+
+        f = Fernet(self.symmetrical_master_key)
+
+        try:
+            #Si el CIPA no esta en el diccionario, el paciente no está registrado
+            current_DNI = self.encrypted_DNIs[self.entry_CIPA.get()]
+            #Si el DNI no está en el diccionario, el paciente no está registrado
+            current_CIPA = self.encrypted_CIPAs[self.entry_DNI.get()]
+        except:
+            messagebox.showerror("Actualización de paciente", "La información del paciente que trata de actualizar es inmutable.\n\nCIPA y DNI no son modificables")
+            return
+
+
+        #Actualizamos el paciente, cifrando de nuevo toda su información, inclusive los datos actualizados
+        self.delete_data(True)
+
+        self.encrypted_DNIs = {}
+        self.encrypted_CIPAs = {}
+
+        self.add_patient(True)
+
+        #Refrescamos la vista descifrada de los pacientes
+        self.fetch_data()
+
+        #Vaciamos los inputs
+        self.clear()
+
+        messagebox.showinfo("Registro de paciente", "El paciente ha sido actualizado con éxito.")
+
+    def filter_patients(self):
+        #Función para filtrar un paciente por su DNI o CIPA
+        try:
+            #Analizamos por que campo se esta filtrando y comprobamos si hay algún paciente con ese valor de campo
+            if self.entry_criteria.get() == "CIPA":
+                value = self.encrypted_DNIs[self.entry_filter_text.get()]
+
+            elif self.entry_criteria.get() == "DNI":
+                value = self.encrypted_CIPAs[self.entry_filter_text.get()]
+
+            #Si el campo no existe, es erróneo o vacío, se notifica del error de filtrado
+            else:
+                messagebox.showerror("Error de filtrado", "Filtre por un campo válido de los proporcionados.")
+                return
+        #Si no exite el paciente filtrado, se indica por pantalla
+        except:
+            messagebox.showerror("Error de filtrado", "El " + str(self.entry_criteria.get()) + " introducido no se encuentra registrado.")
+            return
+
+        #Se recupera el paciente con dichas características
+        with open("../JsonFiles/patients_data.json", "r") as file:
+            patients_data = json.load(file)
+
+        f = Fernet(self.symmetrical_master_key)
+
+        patients_decrypted = []
+
+        for row in patients_data:
+            row_decrypted = []
+            fields_to_decrypt= row[:-2]
+            original_message = ''.join(row[:-2]).encode()
+
+            #Se discriminan aquellos pacientes que no coincidan con el CIPA/DNI de filtrado
+            if fields_to_decrypt[0] == value or fields_to_decrypt[1] == value:
+
+                for attribute in fields_to_decrypt:
+                    try:
+                        decrypted_attribute = f.decrypt(str(attribute).encode()).decode()
+                    except:
+                        decrypted_attribute = "C0RRUPT3D D4T4"
+
+                    row_decrypted.append(decrypted_attribute)
+
+                public_key_bytes = row[-2].encode()
+                public_key = serialization.load_pem_public_key(public_key_bytes, backend=default_backend())
+
+                signed_record = bytes.fromhex(row[-1])
+
+                try:
+                    public_key.verify(
+                        signed_record,
+                        original_message,
+                        padding.PSS(
+                            mgf=padding.MGF1(hashes.SHA256()),
+                            salt_length=padding.PSS.MAX_LENGTH
+                        ),
+                        hashes.SHA256()
+                    )
+                    row_decrypted.insert(0, "VALIDADO & VERIFICADO")
+                except:
+                    row_decrypted.insert(0, "CORRUPTO")
+
+                patients_decrypted.append(row_decrypted)
+
+        #Se insertan los pacientes recuperados con los datos coincidentes al filtro en la vista descifrada del sistema
+        if len(patients_decrypted) >= 0:
+            self.treeview_patients.delete(*self.treeview_patients.get_children())
+            for row in patients_decrypted:
+                self.treeview_patients.insert("", END, value=row)
+
+        #Vaciamos los inputs generales
+        self.clear()
+
     def fetch_data(self):
         f = Fernet(self.symmetrical_master_key)
 
@@ -399,7 +536,7 @@ class HospitalManagementSystem:
                 row_decrypted.insert(0, "VALIDADO & VERIFICADO")
             except:
                 row_decrypted.insert(0, "CORRUPTO")
-            
+
             patients_decrypted.append(row_decrypted)
 
         #Insertamos en la vista de la aplicación los datos descifrados
@@ -414,122 +551,9 @@ class HospitalManagementSystem:
         #Vaciamos los inputs de filtrado
         self.entry_criteria.delete(0, END)
         self.entry_filter_text.delete(0, END)
-        
-    def clear(self):
-        #Función para vaciar las entradas de datos para registrar o filtrar pacientes en el sistema
-        self.entry_CIPA.delete(0, END)
-        self.entry_DNI.delete(0, END)
-        self.entry_name.delete(0, END)
-        self.entry_surnames.delete(0, END)
-        self.entry_gender.delete(0, END)
-        self.entry_age.delete(0, END)
-        self.entry_phone.delete(0, END)
-        self.entry_email.delete(0, END)
-        self.entry_address.delete(0, END)
-        self.entry_blood_type.delete(0, END)
-        self.entry_health_problems.delete(0, END)
-        self.entry_medicines.delete(0, END)
-        self.entry_treatments.delete(0, END)
-        self.entry_vaccines.delete(0, END)
-        self.entry_next_check_up.delete(0, END)
-        self.entry_ref_medical_center.delete(0, END)
-        self.entry_main_doctor.delete(0, END)
 
-    def get_cursor(self, ev):
-        #Función para recuperar los datos de información del paciente y que se sobreescriban en los inputs para su
-        #manejo
-        cursor_row = self.treeview_patients.focus()
-        
-        if cursor_row:
-            contents = self.treeview_patients.item(cursor_row)
-            row = contents["values"]
-
-            self.clear()
-
-            self.entry_CIPA.insert(0,row[1])
-            self.entry_DNI.insert(0,row[2])
-            self.entry_name.insert(0,row[3])
-            self.entry_surnames.insert(0,row[4])
-            self.entry_gender.insert(0,row[5])
-            self.entry_age.insert(0,row[6])
-            self.entry_phone.insert(0,row[7])
-            self.entry_email.insert(0,row[8])
-            self.entry_address.insert(0,row[9])
-            self.entry_blood_type.insert(0,row[10])
-            self.entry_health_problems.insert(0, row[11])
-            self.entry_medicines.insert(0,row[12])
-            self.entry_treatments.insert(0,row[13])
-            self.entry_vaccines.insert(0, row[14])
-            self.entry_next_check_up.insert(0,row[15])
-            self.entry_ref_medical_center.insert(0,row[16])
-            self.entry_main_doctor.insert(0,row[17])
-
-    def update_data(self):
-        #Función para actualizar información no inmutable de un paciente
-        if not self.validate_data():
-            return
-
-        f = Fernet(self.symmetrical_master_key)
-
-        try:
-            #Si el CIPA no esta en el diccionario, el paciente no está registrado
-            current_DNI = self.encrypted_DNIs[self.entry_CIPA.get()]
-            #Si el DNI no está en el diccionario, el paciente no está registrado
-            current_CIPA = self.encrypted_CIPAs[self.entry_DNI.get()]
-        except:
-            messagebox.showerror("Actualización de paciente", "La información del paciente que trata de actualizar es inmutable.\n\nCIPA y DNI no son modificables")
-            return
-
-
-        #Actualizamos el paciente, cifrando de nuevo toda su información, inclusive los datos actualizados
-        self.delete_data(True)
-
-        self.encrypted_DNIs = {}
-        self.encrypted_CIPAs = {}
-
-        self.add_patient(True)
-
-        #Refrescamos la vista descifrada de los pacientes
-        self.fetch_data()
-
-        #Vaciamos los inputs
-        self.clear()
-
-        messagebox.showinfo("Registro de paciente", "El paciente ha sido actualizado con éxito.")
-
-    def delete_data(self, update=False):
-        #Función para borrar un paciente
-
-        try:
-            current_DNI = self.encrypted_DNIs[self.entry_CIPA.get()]
-        except:
-            messagebox.showerror("Error de borrado de paciente", "Coloquesé de nuevo sobre el paciente a borrar.")
-            return
-
-        #Borramos el paciente filtrando por su DNI cifrado (clave primaria)
-        with open("../JsonFiles/patients_data.json", "r") as file:
-            patients_data = json.load(file)
-
-        for row in patients_data:
-            if row[1]==current_DNI:
-                patients_data.remove(row)
-
-        updated_patients_data = json.dumps(patients_data, indent=2)
-
-        with open("../JsonFiles/patients_data.json", "w") as file:
-            file.write(updated_patients_data)
-
-        if update == False:
-            #Refrescamos la vista descifrada de los pacientes
-            self.fetch_data()
-
-            #Vaciamos los inputs
-            self.clear()
-
-            messagebox.showinfo("Borrado de paciente", "El paciente ha sido eliminado con éxito.")
-    
     def validate_data(self):
-        #Función para validar el formato de los campos de información del paciente a insertar o actualizar
+        # Función para validar el formato de los campos de información del paciente a insertar o actualizar
         regex_CIPA = r"^\d{11}$"
         regex_DNI = r"^\d{8}[A-HJ-NP-TV-Z]$"
         regex_name = r"^[A-ZÁÉÍÓÚÜ][a-záéíóúü]+(?: [A-ZÁÉÍÓÚÜ][a-záéíóúü]+)?$"
@@ -570,59 +594,57 @@ class HospitalManagementSystem:
 
         for value, regex, field_name in fields_to_validate:
             if not re.match(regex, value):
-                messagebox.showerror("Registro de paciente", f"El campo, {field_name}, no cumple con la expresión esperada.")
+                messagebox.showerror("Registro de paciente",
+                                     f"El campo, {field_name}, no cumple con la expresión esperada.")
                 return False
-        
+
         return True
 
-    def filter_patients(self):
-        #Función para filtrar un paciente por su DNI o CIPA
-        try:
-            #Analizamos por que campo se esta filtrando y comprobamos si hay algún paciente con ese valor de campo
-            if self.entry_criteria.get() == "CIPA":
-                value = self.encrypted_DNIs[self.entry_filter_text.get()]
+    def get_cursor(self, ev):
+        #Función para recuperar los datos de información del paciente y que se sobreescriban en los inputs para su
+        #manejo
+        cursor_row = self.treeview_patients.focus()
+        
+        if cursor_row:
+            contents = self.treeview_patients.item(cursor_row)
+            row = contents["values"]
 
-            elif self.entry_criteria.get() == "DNI":
-                value = self.encrypted_CIPAs[self.entry_filter_text.get()]
+            self.clear()
 
-            #Si el campo no existe, es erróneo o vacío, se notifica del error de filtrado
-            else:
-                messagebox.showerror("Error de filtrado", "Filtre por un campo válido de los proporcionados.")
-                return
-        #Si no exite el paciente filtrado, se indica por pantalla
-        except:
-            messagebox.showerror("Error de filtrado", "El " + str(self.entry_criteria.get()) + " introducido no se encuentra registrado.")
-            return
+            self.entry_CIPA.insert(0,row[1])
+            self.entry_DNI.insert(0,row[2])
+            self.entry_name.insert(0,row[3])
+            self.entry_surnames.insert(0,row[4])
+            self.entry_gender.insert(0,row[5])
+            self.entry_age.insert(0,row[6])
+            self.entry_phone.insert(0,row[7])
+            self.entry_email.insert(0,row[8])
+            self.entry_address.insert(0,row[9])
+            self.entry_blood_type.insert(0,row[10])
+            self.entry_health_problems.insert(0, row[11])
+            self.entry_medicines.insert(0,row[12])
+            self.entry_treatments.insert(0,row[13])
+            self.entry_vaccines.insert(0, row[14])
+            self.entry_next_check_up.insert(0,row[15])
+            self.entry_ref_medical_center.insert(0,row[16])
+            self.entry_main_doctor.insert(0,row[17])
 
-        #Se recupera el paciente con dichas características
-        with open("../JsonFiles/patients_data.json", "r") as file:
-            patients_data = json.load(file)
-
-        f = Fernet(self.symmetrical_master_key)
-
-        patients_decrypted = []
-
-        for row in patients_data:
-            row_decrypted = []
-            fields_to_decrypt= row[:-2]
-
-            if fields_to_decrypt[0] == value or fields_to_decrypt[1] == value:
-
-                for attribute in fields_to_decrypt:
-                    try:
-                        decrypted_attribute = f.decrypt(str(attribute).encode()).decode()
-                    except:
-                        decrypted_attribute = "Corrupto"
-
-                    row_decrypted.append(decrypted_attribute)
-
-                patients_decrypted.append(row_decrypted)
-
-        #Se insertan los pacientes recuperados con los datos coincidentes al filtro en la vista descifrada del sistema
-        if len(patients_decrypted) >= 0:
-            self.treeview_patients.delete(*self.treeview_patients.get_children())
-            for row in patients_decrypted:
-                self.treeview_patients.insert("", END, value=row)
-
-        #Vaciamos los inputs generales
-        self.clear()
+    def clear(self):
+        # Función para vaciar las entradas de datos para registrar o filtrar pacientes en el sistema
+        self.entry_CIPA.delete(0, END)
+        self.entry_DNI.delete(0, END)
+        self.entry_name.delete(0, END)
+        self.entry_surnames.delete(0, END)
+        self.entry_gender.delete(0, END)
+        self.entry_age.delete(0, END)
+        self.entry_phone.delete(0, END)
+        self.entry_email.delete(0, END)
+        self.entry_address.delete(0, END)
+        self.entry_blood_type.delete(0, END)
+        self.entry_health_problems.delete(0, END)
+        self.entry_medicines.delete(0, END)
+        self.entry_treatments.delete(0, END)
+        self.entry_vaccines.delete(0, END)
+        self.entry_next_check_up.delete(0, END)
+        self.entry_ref_medical_center.delete(0, END)
+        self.entry_main_doctor.delete(0, END)

@@ -33,7 +33,7 @@ class SignUpWindow:
         self.master.title("Crear cuenta")
         self.master.geometry("500x700")
 
-        self.create_widgets()  #Función para crear la interfaz de la ventana de LogIn
+        self.create_widgets()  #Función para crear la interfaz de la ventana de SignUp
     
     def create_widgets(self):
         self.label_daily_server_access_key = tk.Label(self.master, text="Cl@VE DE ACCESO AL SERVIDOR")
