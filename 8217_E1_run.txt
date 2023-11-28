@@ -12,13 +12,6 @@ Paso 3) Rellenar el formulario con datos verosímiles.
 
         "CL@VE DE ACCESO AL SERVIDOR" : "12345".
 
-        Esta clave es la que se encuentre activa para la aplicación/servidor en el estado actual
-        del proyecto, pero podrá cambiarse cuando se desee ejecutando "server_access_mamanger.py".
-
-        Se simula que este ejcutable solo estaría disponible para personal autorizado y encargado de la
-        administración del sistema, los cuales podrán rotar dicha clave por seguridad y comunicarsela a
-        los trabajdores.
-
 PASO 4) Esperar a que la AC acepte la solicitud de creación de tu cuenta, es decir, genere tu certificado.
 
         Para ello, ejecutar en nombre de la autoridad de certificación, desde el directorio src/AC,
